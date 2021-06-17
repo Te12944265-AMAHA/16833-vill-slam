@@ -61,7 +61,9 @@ add_executable(laser_calib
   src/laser_calib.cpp
   src/laser_calib_node.cpp
   src/laser_stripe_detector.cpp
-  src/util/cv_click_handler.cpp)
+  src/util/cv_click_handler.cpp
+  src/util/input_parser.cpp
+  )
 target_link_libraries(laser_calib ${catkin_LIBRARIES} ${OpenCV_LIBS}
   ${PYTHON_LIBRARIES})
 
@@ -71,6 +73,7 @@ add_executable(laser_detector
   src/laser_detector_node.cpp
   src/laser_geometry_utils.cpp
   src/laser_stripe_detector.cpp
+  src/util/input_parser.cpp
   )
 add_dependencies(laser_detector ${PROJECT_NAME}_gencfg)
 target_link_libraries(laser_detector ${catkin_LIBRARIES} ${OpenCV_LIBS})
