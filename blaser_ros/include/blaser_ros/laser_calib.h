@@ -72,8 +72,8 @@ public:
    * @param env_config_fn  environment config file, laser detection params
    * @param cam_config_fn  camera intrinsics config file
    */
-  explicit LaserCalibCB(std::string& image_dir, std::string& target_config_fn,
-                      std::string& env_config_fn, bool f_calib_laser_ori);
+  explicit LaserCalibCB(const std::string& image_dir, const std::string& config_fn,
+                        bool f_calib_laser_ori);
 
   ~LaserCalibCB();
 
@@ -98,10 +98,10 @@ protected:
   /**
    * functions to load config files
    */
-  bool loadImages(std::string& image_dir);
+  bool loadImages(std::string image_dir);
 
-  virtual bool loadCamConfig(std::string& cam_config_fn) = 0;
-  bool loadTargetConfig(std::string& target_config_fn);
+  virtual bool loadCamConfig(const std::string& config_fn) = 0;
+  bool loadTargetConfig(const std::string& config_fn);
 
   /**
    * generate undistorted visualization image, including:
@@ -231,7 +231,7 @@ protected:
    */
   virtual void pixel2Normal(const Eigen::Vector2d& pt, Eigen::Vector3d& pt_3d) = 0;
 
-  virtual bool undistImage(const cv::Mat& src, cv::Mat& dst) = 0;
+  virtual void undistImage(const cv::Mat& src, cv::Mat& dst) = 0;
 
   void initClickStripeEnds();
   static void clickStripeEndsCb(int event, int x, int y, int flags, void* param);
@@ -257,12 +257,12 @@ protected:
 class LaserCalibCBPinhole : public LaserCalibCB
 {
 public:
-  explicit LaserCalibCBPinhole(std::string& image_dir, std::string& target_config_fn,
-                               std::string& env_config_fn, std::string& cam_config_fn,
+  explicit LaserCalibCBPinhole(const std::string& image_dir,
+                               const std::string& config_fn,
                                bool f_calib_laser_ori);
 
 private:
-  bool loadCamConfig(std::string& cam_config_fn) override ;
+  bool loadCamConfig(const std::string& config_fn) override ;
 
   bool solveCheckerBoardRt(ImCalibPtr p_im) override ;
 
@@ -270,7 +270,7 @@ private:
                        std::vector<cv::Point2f>& dst) override ;
 
 
-  bool undistImage(const cv::Mat& src, cv::Mat& dst) override;
+  void undistImage(const cv::Mat& src, cv::Mat& dst) override;
 
   void pixel2Normal(const Eigen::Vector2d& pt, Eigen::Vector3d& pt_3d);
 
@@ -284,11 +284,12 @@ typedef std::shared_ptr<LaserCalibCBPinhole> LaserCalibCBPinholePtr;
 class LaserCalibCBCamodocal : public LaserCalibCB
 {
 public:
-  explicit LaserCalibCBCamodocal(std::string& image_dir, std::string& target_config_fn,
-      std::string& env_config_fn, std::string& cam_config_fn, bool f_calib_laser_ori);
+  explicit LaserCalibCBCamodocal(const std::string& image_dir,
+                                 const std::string& config_fn,
+                                 bool f_calib_laser_ori);
 
 private:
-  bool loadCamConfig(std::string& cam_config_fn) override ;
+  bool loadCamConfig(const std::string& cam_config_fn) override ;
 
   bool initUndistortRectifyMap();
 
@@ -298,7 +299,7 @@ private:
                        std::vector<cv::Point2f>& dst) override ;
 
 
-  bool undistImage(const cv::Mat& src, cv::Mat& dst) override;
+  void undistImage(const cv::Mat& src, cv::Mat& dst) override;
 
   void pixel2Normal(const Eigen::Vector2d& pt, Eigen::Vector3d& pt_3d);
 
@@ -311,8 +312,9 @@ private:
 typedef std::shared_ptr<LaserCalibCBCamodocal> LaserCalibCBCamodocalPtr;
 
 
-LaserCalibCBPtr createLaserCalib(std::string model, std::string& image_dir,
-    std::string& target_config_fn, std::string& env_config_fn,
-    std::string& cam_config_fn, bool f_calib_laser_ori);
+LaserCalibCBPtr createLaserCalib(const std::string& model,
+                                 const std::string& image_dir,
+                                 const std::string& config_fn,
+                                 bool f_calib_laser_ori);
 
 #endif //VIO_BLASER_LASER_CALIB_H

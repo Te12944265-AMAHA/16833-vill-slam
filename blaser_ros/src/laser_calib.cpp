@@ -16,11 +16,6 @@ using std::endl;
 
 std::string LaserCalibCB::click_wn_ = "clickStripeEnds";
 
-static void onMouse( int evt, int x, int y, int flags, void* param )
-{
-  //cout << "test on mouse" << endl;
-}
-
 bool best_plane_from_points(const std::vector<Eigen::Vector3d> &c,
                             Eigen::Vector3d &centroid,
                             Eigen::Vector3d &plane_normal)
@@ -54,21 +49,24 @@ bool best_line_from_points(const std::vector<vec3_T>& c,
   size_t num_atoms = c.size();
   Eigen::Matrix<typename vec3_T::Scalar, Eigen::Dynamic, Eigen::Dynamic >
       centers(num_atoms, 3);
-  for (size_t i = 0; i < num_atoms; ++i) centers.row(i) = c[i];
+  for (size_t i = 0; i < num_atoms; ++i)
+    centers.row(i) = c[i];
 
   origin = centers.colwise().mean();
   Eigen::MatrixXd centered = centers.rowwise() - origin.transpose();
   Eigen::MatrixXd cov = centered.adjoint() * centered;
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eig(cov);
   axis = eig.eigenvectors().col(2).normalized();
+
+  return true;
 }
 
-LaserCalibCB::LaserCalibCB(std::string &image_dir, std::string &target_config_fn,
-                       std::string &env_config_fn, bool f_calib_laser_ori)
-    : lsd_(env_config_fn, "calib")
+LaserCalibCB::LaserCalibCB(const std::string& image_dir, const std::string& config_fn,
+                           bool f_calib_laser_ori)
+    : lsd_(config_fn)
     , f_calib_laser_ori_(f_calib_laser_ori)
 {
-  loadTargetConfig(target_config_fn);
+  loadTargetConfig(config_fn);
   genCheckerboardPoints();
   loadImages(image_dir);
   initClickStripeEnds();
@@ -151,7 +149,7 @@ bool LaserCalibCB::solveLaserPlane(Eigen::Vector4d &plane_param)
   return true;
 }
 
-bool LaserCalibCB::loadImages(std::string &image_dir)
+bool LaserCalibCB::loadImages(std::string image_dir)
 {
   std::vector<cv::String> v_im_fn;
   if (image_dir.back() != '/')
@@ -171,14 +169,14 @@ bool LaserCalibCB::loadImages(std::string &image_dir)
   return true;
 }
 
-bool LaserCalibCB::loadTargetConfig(std::string &target_config_fn)
+bool LaserCalibCB::loadTargetConfig(const std::string& config_fn)
 {
-  cv::FileStorage target_fs(target_config_fn, cv::FileStorage::READ);
-  assert(target_fs.isOpened() && "Failed to open target config file!");
+  cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open target config file!");
   std::vector<int> v_pattern_size(2);
-  target_fs["target_cols"] >> v_pattern_size[0];
-  target_fs["target_rows"] >> v_pattern_size[1];
-  target_fs["square_size"] >> cb_square_size_;
+  fs["target_cols"] >> v_pattern_size[0];
+  fs["target_rows"] >> v_pattern_size[1];
+  fs["square_size"] >> cb_square_size_;
   cb_pattern_size_ = cv::Size(v_pattern_size[0], v_pattern_size[1]);
 
   return true;
@@ -272,9 +270,9 @@ bool LaserCalibCB::ransacFitLine(std::vector<pt_t> &pts, Vec4 &line_params,
                                std::vector<int>& idx_outliers)
 {
   size_t max_n_inliers = 0;
-  const size_t N_ITER = 100;
+  const size_t N_ITER = 40; // computed at 33% inlier ratio & 99% success rate
   const size_t TH_N_INLIERS = 30;
-  for (int i = 0; i < N_ITER; i++) {
+  for (size_t i = 0; i < N_ITER; i++) {
     int idx0 = rand() % pts.size(), idx1 = rand() % (pts.size() - 1);
     idx1 = idx1 >= idx0 ? idx1 + 1 : idx1;
     Eigen::Vector2d pt0(pts[idx0].x, pts[idx0].y);
@@ -360,12 +358,21 @@ bool LaserCalibCB::solveImageLaserPtPos(ImCalib &im)
   im.v_laser_pts.clear();
   im.v_laser_pts.reserve(im.laser_idx_inlier_.size());
 
-  for (int i = 0; i < im.laser_idx_inlier_.size(); i++) {
+  for (int idx : im.laser_idx_inlier_)
+  {
+    im.v_laser_pts.emplace_back(im.laser_uv_d_[idx], im.laser_uv_u_[idx]);
+    solveLaserPtPos(im.v_laser_pts.back(), im.R, im.t);
+  }
+
+  // an older for loop, replace by the range-based for loop above
+  /*
+  for (size_t i = 0; i < im.laser_idx_inlier_.size(); i++) {
     im.v_laser_pts.emplace_back(
         im.laser_uv_d_[im.laser_idx_inlier_[i]],
         im.laser_uv_u_[im.laser_idx_inlier_[i]]);
     solveLaserPtPos(im.v_laser_pts.back(), im.R, im.t);
   }
+   */
   return true;
 }
 
@@ -516,12 +523,12 @@ LaserCalibCB::~LaserCalibCB()
   cv::setMouseCallback(click_wn_, NULL, 0);
 }
 
-bool LaserCalibCBPinhole::loadCamConfig(std::string &cam_config_fn)
+bool LaserCalibCBPinhole::loadCamConfig(const std::string& config_fn)
 {
-  cv::FileStorage cam_fs(cam_config_fn, cv::FileStorage::READ);
-  assert(cam_fs.isOpened() && "Failed to open camera config file!");
-  cam_fs["camera_matrix"] >> K_;
-  cam_fs["distortion_coefficients"] >> D_;
+  cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open camera config file!");
+  fs["camera_matrix"] >> K_;
+  fs["distortion_coefficients"] >> D_;
   return true;
 }
 
@@ -538,14 +545,12 @@ void LaserCalibCBPinhole::undistortPixels(const std::vector<cv::Point2f> &src,
   }
 }
 
-LaserCalibCBPinhole::LaserCalibCBPinhole(std::string &image_dir,
-                                         std::string &target_config_fn,
-                                         std::string &env_config_fn,
-                                         std::string &cam_config_fn,
+LaserCalibCBPinhole::LaserCalibCBPinhole(const std::string& image_dir,
+                                         const std::string& config_fn,
                                          bool f_calib_laser_ori)
-: LaserCalibCB(image_dir, target_config_fn, env_config_fn, f_calib_laser_ori)
+: LaserCalibCB(image_dir, config_fn, f_calib_laser_ori)
 {
-  loadCamConfig(cam_config_fn);
+  loadCamConfig(config_fn);
 
   procImages();
 }
@@ -587,7 +592,7 @@ LaserCalibCB::solveLaserParams(const Eigen::Vector4d& plane_param,
                                Eigen::Vector2d &fan_rb)
 {
   // 1. data check
-  if (laser_end_l_.size() < 4 || laser_end_r_.size() < 4)
+  if (laser_end_l_.size() < 4u || laser_end_r_.size() < 4u)
   {
     cout << "Not enough laser stripe end data" << endl;
     return false;
@@ -599,11 +604,11 @@ LaserCalibCB::solveLaserParams(const Eigen::Vector4d& plane_param,
   Eigen::Hyperplane<double, 3> l_plane(lp_n, plane_norm(3));
   std::vector<Eigen::Vector3d> se_l(laser_end_l_.size());
   std::vector<Eigen::Vector3d> se_r(laser_end_r_.size());
-  for (int i = 0; i < laser_end_l_.size(); i++)
+  for (size_t i = 0; i < laser_end_l_.size(); i++)
   {
     se_l[i] = l_plane.projection(laser_end_l_[i]);
   }
-  for (int i = 0; i < laser_end_r_.size(); i++)
+  for (size_t i = 0; i < laser_end_r_.size(); i++)
   {
     se_r[i] = l_plane.projection(laser_end_r_[i]);
   }
@@ -649,7 +654,7 @@ LaserCalibCB::solveLaserParams(const Eigen::Vector4d& plane_param,
   return true;
 }
 
-bool LaserCalibCBPinhole::undistImage(const cv::Mat &src, cv::Mat &dst)
+void LaserCalibCBPinhole::undistImage(const cv::Mat &src, cv::Mat &dst)
 {
   cv::undistort(src, dst, K_, D_);
 }
@@ -669,25 +674,24 @@ bool LaserCalibCBPinhole::solveCheckerBoardRt(ImCalibPtr p_im)
   return true;
 }
 
-LaserCalibCBCamodocal::LaserCalibCBCamodocal(std::string &image_dir,
-                                             std::string &target_config_fn,
-                                             std::string &env_config_fn,
-                                             std::string &cam_config_fn,
+LaserCalibCBCamodocal::LaserCalibCBCamodocal(const std::string& image_dir,
+                                             const std::string& config_fn,
                                              bool f_calib_laser_ori)
-: LaserCalibCB(image_dir, target_config_fn, env_config_fn, f_calib_laser_ori)
+: LaserCalibCB(image_dir, config_fn, f_calib_laser_ori)
 {
-  loadCamConfig(cam_config_fn);
+  loadCamConfig(config_fn);
 
   initUndistortRectifyMap();
 
   procImages();
 }
 
-bool LaserCalibCBCamodocal::loadCamConfig(std::string &cam_config_fn)
+bool LaserCalibCBCamodocal::loadCamConfig(const std::string& config_fn)
 {
   m_camera_ = camodocal::CameraFactory::instance()
-      ->generateCameraFromYamlFile(cam_config_fn);
+      ->generateCameraFromYamlFile(config_fn);
   cout << m_camera_->parametersToString() << endl;
+  return true;
 }
 
 bool LaserCalibCBCamodocal::solveCheckerBoardRt(ImCalibPtr p_im)
@@ -719,11 +723,9 @@ void LaserCalibCBCamodocal::undistortPixels(const std::vector<cv::Point2f> &src,
   }
 }
 
-
-bool LaserCalibCBCamodocal::undistImage(const cv::Mat &src, cv::Mat &dst)
+void LaserCalibCBCamodocal::undistImage(const cv::Mat &src, cv::Mat &dst)
 {
   cv::remap(src, dst, rect_map1_, rect_map2_, cv::INTER_CUBIC);
-  return true;
 }
 
 bool LaserCalibCBCamodocal::initUndistortRectifyMap()
@@ -748,23 +750,22 @@ void LaserCalibCBCamodocal::pixel2Normal(const Eigen::Vector2d &pt,
   pt_3d /= pt_3d(2);
 }
 
-LaserCalibCBPtr createLaserCalib(std::string model, std::string& image_dir,
-                                 std::string& target_config_fn,
-                                 std::string& env_config_fn,
-                                 std::string& cam_config_fn,
+LaserCalibCBPtr createLaserCalib(const std::string& model,
+                                 const std::string& image_dir,
+                                 const std::string& config_fn,
                                  bool f_calib_laser_ori)
 {
   if (model == "pinhole")
   {
     LaserCalibCBPinholePtr p_laser_calib = std::make_shared<LaserCalibCBPinhole>
-        (image_dir, target_config_fn, env_config_fn, cam_config_fn, f_calib_laser_ori);
+        (image_dir, config_fn, f_calib_laser_ori);
     return p_laser_calib;
   }
   else if (model == "camodocal")
   {
     LaserCalibCBCamodocalPtr p_laser_calib =
         std::make_shared<LaserCalibCBCamodocal>(
-            image_dir, target_config_fn, env_config_fn, cam_config_fn, f_calib_laser_ori);
+            image_dir, config_fn, f_calib_laser_ori);
     return p_laser_calib;
   }
   else

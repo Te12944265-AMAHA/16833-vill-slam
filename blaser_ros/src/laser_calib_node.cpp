@@ -24,7 +24,7 @@ int main(int argc, char **argv)
    */
 
   std::string image_dir;
-  std::string config_file;
+  std::string config_fn;
   std::string cam_model; // pinhole or camodocal
   bool calib_laser_origin;
 
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
   po::options_description desc("Laser calib allowed options");
   desc.add_options()
       ("help", "produce help message")
-      ("config,c", po::value<std::string>(&config_file), "config file")
+      ("config,c", po::value<std::string>(&config_fn), "config file")
       ("input,i", po::value<std::string>(&image_dir), "image input directory")
       ("camera-model",
           po::value<std::string>(&cam_model)->default_value("camodocal"),
@@ -60,9 +60,8 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  auto laser_calib = createLaserCalib(cam_model, image_dir, target_config_fn,
-                                      env_config_fn, cam_config_fn,
-                                      f_calib_laser_ori);
+  auto laser_calib = createLaserCalib(cam_model, image_dir, config_fn,
+                                      calib_laser_origin);
 
   laser_calib->examineByImage();
 

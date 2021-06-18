@@ -7,21 +7,17 @@
 
 using std::cout;
 using std::endl;
-LaserStripeDetector::LaserStripeDetector(std::string &env_config_fn,
-    std::string ns)
+LaserStripeDetector::LaserStripeDetector(const std::string &config_fn)
 : f_intrisics_(false)
 , v_thresh_(0.0)
-, ns_(ns)
 {
-  loadEnvConfig(env_config_fn);
+  loadEnvConfig(config_fn);
   initParams();
 }
 
-LaserStripeDetector::LaserStripeDetector(std::string &env_config_fn,
-                                         std::string &cam_config_fn,
-                                         std::string ns)
+LaserStripeDetector::LaserStripeDetector(const std::string &env_config_fn,
+                                         const std::string &cam_config_fn)
 : f_intrisics_(true)
-, ns_(ns)
 {
   loadEnvConfig(env_config_fn);
   loadCamConfig(cam_config_fn);
@@ -79,18 +75,18 @@ bool LaserStripeDetector::detectLaserStripeUndistort(cv::Mat &im,
   return true;
 }
 
-void LaserStripeDetector::loadEnvConfig(std::string &env_config_fn)
+void LaserStripeDetector::loadEnvConfig(const std::string &env_config_fn)
 {
   cv::FileStorage env_fs(env_config_fn, cv::FileStorage::READ);
   cout << "Laser stripe detector: loading from config "
        << env_config_fn << endl;
   assert(env_fs.isOpened() && "Failed to open environment config file!");
   std::vector<int> rm1l(3), rm1h(3), rm2l(3), rm2h(3), roi(4);
-  env_fs["red_mask_1_l_" + ns_] >> rm1l;
-  env_fs["red_mask_1_h_" + ns_] >> rm1h;
-  env_fs["red_mask_2_l_" + ns_] >> rm2l;
-  env_fs["red_mask_2_h_" + ns_] >> rm2h;
-  env_fs["v_thresh_ratio_" + ns_] >> v_thresh_ratio_;
+  env_fs["red_mask_1_l"] >> rm1l;
+  env_fs["red_mask_1_h"] >> rm1h;
+  env_fs["red_mask_2_l"] >> rm2l;
+  env_fs["red_mask_2_h"] >> rm2h;
+  env_fs["v_thresh_ratio"] >> v_thresh_ratio_;
   v_thresh_ratio_ = (v_thresh_ratio_ > 0) ? v_thresh_ratio_ : 0.1;
 
   red_mask_1_l_ = cv::Scalar(rm1l[0], rm1l[1], rm1l[2]);
@@ -114,7 +110,7 @@ void LaserStripeDetector::loadEnvConfig(std::string &env_config_fn)
       << "\tV channel thresh " << v_thresh_ratio_ << endl;
 }
 
-void LaserStripeDetector::loadCamConfig(std::string &cam_config_fn)
+void LaserStripeDetector::loadCamConfig(const std::string &cam_config_fn)
 {
   cv::FileStorage cam_fs(cam_config_fn, cv::FileStorage::READ);
   assert(cam_fs.isOpened() && "Failed to open camera config file!");
@@ -169,9 +165,9 @@ void LaserStripeDetector::rejectOutliers(const std::vector<cv::Point2f> &pts_in,
   pts_out.reserve(pts_in.size());
 
   int seg_cnt = 0;
-  for (int i = 0; i < pts_in.size(); i++)
+  for (size_t i = 0; i < pts_in.size(); i++)
   {
-    int j = i;
+    size_t j = i;
     while (i != pts_in.size()
     && fabs(pts_in[i + 1].x - pts_in[i].x) < 2
     && fabs(pts_in[i + 1].y - pts_in[i].y) < 3)

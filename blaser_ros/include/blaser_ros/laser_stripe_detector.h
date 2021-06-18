@@ -43,17 +43,16 @@ public:
    * Constructor function.
    * @param env_config_fn yaml file describing laser detection parameters
    */
-  explicit LaserStripeDetector(std::string &env_config_fn, std::string ns);
+  explicit LaserStripeDetector(const std::string& config_fn);
 
   /**
    * Constructor function that also enables camera undistortion. Need to provide
-   * camera intrinsics
+   * camera intrinsics. Only supports pinhole model, no support for camodocal
    * @param env_config_fn yaml file describing laser detection parameters
    * @param cam_config_fn yaml file describing camera parameters
    */
-  explicit LaserStripeDetector(std::string &env_config_fn,
-                               std::string &cam_config_fn,
-                               std::string ns);
+  explicit LaserStripeDetector(const std::string& env_config_fn,
+                               const std::string& cam_config_fn);
 
   /**
    * Function to detect laser points in the given image
@@ -100,8 +99,8 @@ private:
   bool findCoMColumn(Eigen::MatrixXd &im, std::vector<cv::Point2f> &CoM_pts);
 
   // functions to load config yaml files
-  void loadEnvConfig(std::string& env_config_fn);
-  void loadCamConfig(std::string& cam_config_fn);
+  void loadEnvConfig(const std::string&  env_config_fn);
+  void loadCamConfig(const std::string&  cam_config_fn);
 
   void rejectOutliers(const std::vector<cv::Point2f> &pts_in,
       std::vector<cv::Point2f> &pts_out);
@@ -111,6 +110,11 @@ private:
    */
   void initParams();
 
+  // camera intrinsics
+  const bool f_intrisics_;
+  cv::Mat K_;
+  cv::Mat D_;
+
   // two red threshold, lower and higher bounds
   cv::Scalar red_mask_1_l_, red_mask_1_h_, red_mask_2_l_, red_mask_2_h_;
 
@@ -118,13 +122,6 @@ private:
 
   // region of interest where we try to find laser stripe
   cv::Rect laser_ROI_;
-
-  // camera intrinsics
-  const bool f_intrisics_;
-  cv::Mat K_;
-  cv::Mat D_;
-
-  std::string ns_;//namespace of config
 
   static const int MIN_LASER_PTS = 20;
 
