@@ -9,25 +9,25 @@ using std::cout;
 using std::endl;
 LaserStripeDetector::LaserStripeDetector(const std::string &config_fn)
 : f_intrisics_(false)
-, v_thresh_(0.0)
+, val_min_(0.0)
 {
-  loadEnvConfig(config_fn);
   initParams();
+  loadEnvConfig(config_fn);
 }
 
 LaserStripeDetector::LaserStripeDetector(const std::string &env_config_fn,
                                          const std::string &cam_config_fn)
 : f_intrisics_(true)
 {
+  initParams();
   loadEnvConfig(env_config_fn);
   loadCamConfig(cam_config_fn);
-  initParams();
 }
 
 bool LaserStripeDetector::detectLaserStripe(cv::Mat &im,
                                             std::vector<cv::Point2f> &laser_pts) {
   cv::Mat im_blur, im_hsv, im_v;
-  cv::Mat red_mask_1, red_mask_2, red_mask;
+  cv::Mat hsv_mask;
   laser_pts.clear();
   laser_pts.reserve(laser_ROI_.width);
 
@@ -36,16 +36,14 @@ bool LaserStripeDetector::detectLaserStripe(cv::Mat &im,
 
   // 2. get red mask
   cv::cvtColor(im_blur, im_hsv, cv::COLOR_BGR2HSV);
-  cv::inRange(im_hsv, red_mask_1_l_, red_mask_1_h_, red_mask_1);
-  cv::inRange(im_hsv, red_mask_2_l_, red_mask_2_h_, red_mask_2);
-  cv::bitwise_or(red_mask_1, red_mask_2, red_mask);
+  generateHSVMasks(im_hsv, hsv_mask);
 
-  cv::morphologyEx(red_mask, red_mask, cv::MORPH_DILATE, mask_dilate_kernel_);
-  cv::morphologyEx(red_mask, red_mask, cv::MORPH_CLOSE , mask_close_kernel_);
+  cv::morphologyEx(hsv_mask, hsv_mask, cv::MORPH_DILATE, mask_dilate_kernel_);
+  cv::morphologyEx(hsv_mask, hsv_mask, cv::MORPH_CLOSE , mask_close_kernel_);
 
   // 3. get masked v channel from hsv image
   cv::Mat im_hsv_masked, im_hsv_split[3];
-  im_hsv.copyTo(im_hsv_masked, red_mask);
+  im_hsv.copyTo(im_hsv_masked, hsv_mask);
   cv::split(im_hsv_masked, im_hsv_split);
   im_v = im_hsv_split[2];
 
@@ -53,9 +51,9 @@ bool LaserStripeDetector::detectLaserStripe(cv::Mat &im,
   std::vector<cv::Point2f> CoM_pts;
   Eigen::MatrixXd ch_v;
   cv::cv2eigen(im_v, ch_v);
-  v_thresh_ = ch_v.maxCoeff() * v_thresh_ratio_;
-  v_thresh_ = (v_thresh_ > 0) ? v_thresh_ : 10;
-  //printf("Set thresh V: max val %f, thresh %f\n", ch_v.maxCoeff(), v_thresh_);
+  val_min_ = ch_v.maxCoeff() * val_ratio_;
+  val_min_ = (val_min_ > 0) ? val_min_ : 10;
+  //printf("Set thresh V: max val %f, thresh %f\n", ch_v.maxCoeff(), val_min_);
   findCoMColumn(ch_v, CoM_pts);
 
   // 5. reject outlier
@@ -81,18 +79,14 @@ void LaserStripeDetector::loadEnvConfig(const std::string &env_config_fn)
   cout << "Laser stripe detector: loading from config "
        << env_config_fn << endl;
   assert(env_fs.isOpened() && "Failed to open environment config file!");
-  std::vector<int> rm1l(3), rm1h(3), rm2l(3), rm2h(3), roi(4);
-  env_fs["red_mask_1_l"] >> rm1l;
-  env_fs["red_mask_1_h"] >> rm1h;
-  env_fs["red_mask_2_l"] >> rm2l;
-  env_fs["red_mask_2_h"] >> rm2h;
-  env_fs["v_thresh_ratio"] >> v_thresh_ratio_;
-  v_thresh_ratio_ = (v_thresh_ratio_ > 0) ? v_thresh_ratio_ : 0.1;
-
-  red_mask_1_l_ = cv::Scalar(rm1l[0], rm1l[1], rm1l[2]);
-  red_mask_1_h_ = cv::Scalar(rm1h[0], rm1h[1], rm1h[2]);
-  red_mask_2_l_ = cv::Scalar(rm2l[0], rm2l[1], rm2l[2]);
-  red_mask_2_h_ = cv::Scalar(rm2h[0], rm2h[1], rm2h[2]);
+  //std::vector<int> rm1l(3), rm1h(3), rm2l(3), rm2h(3)
+  std::vector<int> roi(4);
+  env_fs["hue_min"] >> hue_min_;
+  env_fs["hue_max"] >> hue_max_;
+  env_fs["sat_min"] >> sat_min_;
+  env_fs["val_min"] >> val_min_;
+  env_fs["val_ratio"] >> val_ratio_;
+  val_ratio_ = (val_ratio_ > 0) ? val_ratio_ : 0.1;
 
   env_fs["laser_ROI"] >> roi;
   int width, height;
@@ -102,12 +96,12 @@ void LaserStripeDetector::loadEnvConfig(const std::string &env_config_fn)
                         height - roi[2] - roi[3]);
 
   cout << "*** Laser stripe detector params ***" << endl
-      << "\tmask 1 low " << red_mask_1_l_ << endl
-      << "\tmask 1 high " << red_mask_1_h_ << endl
-      << "\tmask 2 low " << red_mask_2_l_ << endl
-      << "\tmask 2 high " << red_mask_2_h_ << endl
+      << "\tmask hue min " << hue_min_ << endl
+      << "\tmask hue max " << hue_max_ << endl
+      << "\tmask sat min " << sat_min_ << endl
+      << "\tmask val min " << val_min_ << endl
       << "\tlaser ROI " << laser_ROI_ << endl
-      << "\tV channel thresh " << v_thresh_ratio_ << endl;
+      << "\tval ratio " << val_ratio_ << endl;
 }
 
 void LaserStripeDetector::loadCamConfig(const std::string &cam_config_fn)
@@ -135,7 +129,7 @@ bool LaserStripeDetector::findCoMColumn(Eigen::MatrixXd &im,
   {
     val_max[cc] = (int)im.col(cc).maxCoeff(&max_index);
     col_max[cc] = (int)max_index;
-    if (val_max[cc] < v_thresh_) // set a low threshold on dark columns
+    if (val_max[cc] < val_min_) // set a low threshold on dark columns
       continue;
 
     int j = col_max[cc] - 1, k = col_max[cc] + 1;
@@ -182,25 +176,49 @@ void LaserStripeDetector::rejectOutliers(const std::vector<cv::Point2f> &pts_in,
 
 }
 
-bool LaserStripeDetector::setLaserExtractParams(int brightness_thresh,
-                                                int hue_thresh_1,
-                                                int hue_thresh_2)
+bool LaserStripeDetector::setLaserExtractParams(int val_min,
+                                                int hue_min,
+                                                int hue_max)
 {
-  if (brightness_thresh < 0 || brightness_thresh > 255
-      || hue_thresh_1 < 160 || hue_thresh_1 > 180
-      || hue_thresh_2 < 0 || hue_thresh_2 > 20)
+  if (val_min < 0 || val_min > 255
+      || hue_min < 0 || hue_min > 180
+      || hue_max < 0 || hue_max > 180)
     return false;
 
-  red_mask_1_h_ = cv::Scalar(180, 255, 255);
-  red_mask_1_l_ = cv::Scalar(hue_thresh_1, 180, brightness_thresh);
-  red_mask_2_h_ = cv::Scalar(hue_thresh_2, 255, 255);
-  red_mask_2_l_ = cv::Scalar(0, 180, brightness_thresh);
+  val_min_ = val_min;
+  hue_min_ = hue_min;
+  hue_max_ = hue_max;
 
   cout << "*** Changed Laser stripe detector params ***" << endl
-       << "\tmask 1 low " << red_mask_1_l_ << endl
-       << "\tmask 1 high " << red_mask_1_h_ << endl
-       << "\tmask 2 low " << red_mask_2_l_ << endl
-       << "\tmask 2 high " << red_mask_2_h_ << endl;
+       << "\tmask hue min " << hue_min_ << endl
+       << "\tmask hue max " << hue_max_ << endl
+       << "\tmask val min " << val_min_ << endl;
 
   return true;
+}
+
+void LaserStripeDetector::generateHSVMasks(const cv::Mat& im_hsv, cv::Mat& hsv_mask) const
+{
+  // get max value (intensity) of image
+  cv::Mat v_channel;
+  cv::extractChannel(im_hsv, v_channel, 2);
+  double val_max, tmp;
+  cv::minMaxIdx(v_channel, &tmp, &val_max);
+
+  // compute hsv mask
+  double val_min = std::max(val_min_, val_max * val_ratio_);
+  if (hue_min_ > hue_max_) // red color that covers hue value = 180/0
+  {
+    cv::Mat hsv_mask_1, hsv_mask_2;
+    cv::inRange(im_hsv, cv::Scalar(0       , sat_min_, val_min),
+                        cv::Scalar(hue_max_, 255     , 255    ), hsv_mask_1);
+    cv::inRange(im_hsv, cv::Scalar(hue_min_, sat_min_, val_min),
+                        cv::Scalar(180     , 255     , 255    ), hsv_mask_2);
+    cv::bitwise_or(hsv_mask_1, hsv_mask_2, hsv_mask);
+  }
+  else
+  {
+    cv::inRange(im_hsv, cv::Scalar(hue_min_, sat_min_, val_min),
+                        cv::Scalar(hue_max_, 255     , 255    ), hsv_mask);
+  }
 }

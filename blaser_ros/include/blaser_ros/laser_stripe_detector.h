@@ -110,15 +110,28 @@ private:
    */
   void initParams();
 
+  /**
+   * Generate HSV masks for image thresholding.
+   * @param max_val max value (intensity) of the image
+   * @param hsv_masks For range covering hue=180/0 (eg. red), indicated by
+   *                    hue_min > hue_max, vector size = 4
+   *                  else, vector size = 2 (lower, upper bound)
+   */
+  void generateHSVMasks(const cv::Mat& im_hsv, cv::Mat& hsv_mask) const;
+
   // camera intrinsics
   const bool f_intrisics_;
   cv::Mat K_;
   cv::Mat D_;
 
   // two red threshold, lower and higher bounds
-  cv::Scalar red_mask_1_l_, red_mask_1_h_, red_mask_2_l_, red_mask_2_h_;
+  // HSV masks. for range covering hue=180/0 (eg. red), vector size = 2
+  // else vector size = 1
+  // each element pair has a lower HSV bound (first) and a upper one (second)
+  //std::vector<std::pair<cv::Scalar, cv::Scalar>> hsv_masks_;
+  //cv::Scalar red_mask_1_l_, red_mask_1_h_, red_mask_2_l_, red_mask_2_h_;
 
-  double v_thresh_, v_thresh_ratio_;
+  double hue_min_, hue_max_, sat_min_, val_min_, val_ratio_;
 
   // region of interest where we try to find laser stripe
   cv::Rect laser_ROI_;
