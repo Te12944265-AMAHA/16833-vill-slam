@@ -110,9 +110,16 @@ position for each 2D laser point on the image, which is the itersection between
 the checkerboard plane and the line-of-sight ray.
 
 We first need to make sure that the laser stripe detection is working. The laser
-stripe detector basically performs an HSV filter with four parameters hue_low,
-hue_high, sat_low, and val_low, defining a 3D range filter H in \[hue_low,
-hue_high\], S in \[sat_low, 255\], and V in \[val_low, 255\].
+stripe detector basically performs an HSV filter with five parameters hue_min,
+hue_max, sat_min, val_min, and val_ratio, defining a 3D range filter H in \[hue_low,
+hue_high\], S in \[sat_low, 255\], and V in 
+\[max(val_low, image_max_val * val_ratio), 255\]. Note that V range is dynamic 
+and is set with every image.
+
+When using red laser and you want a hue range containing the hue=180 value,
+set hue_min > hue_max and the program will generate two separate hue ranges: 
+one is \[hue_min, 180\] and the other is \[0, hue_max\]. 
+
 
 To set these parameters, first use `python scripts/im_saver.py [image_topic]` to
 save a couple of sample images, then use `python scripts/im_hsv_viewer.py
