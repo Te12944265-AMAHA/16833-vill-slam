@@ -1,0 +1,15 @@
+%YAML:1.0
+
+# camera
+
+# image parameters
+
+# laser detection parameters for HSV thresholding
+# For red laser that 
+hue_min: 10
+hue_max: 30
+sat_min: 100
+val_min: 60 # brightness
+val_ratio: 0.05 # val_thresh = max(val_min, image_max_val * val_ratio)
+
+segment_length_min: 20

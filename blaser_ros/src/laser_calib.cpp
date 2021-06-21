@@ -10,6 +10,7 @@
 #include <blaser_ros/tic_toc.h>
 
 #include <chrono>
+#include <utility>
 
 using std::cout;
 using std::endl;
@@ -61,10 +62,13 @@ bool best_line_from_points(const std::vector<vec3_T>& c,
   return true;
 }
 
-LaserCalibCB::LaserCalibCB(const std::string& image_dir, const std::string& config_fn,
+LaserCalibCB::LaserCalibCB(const std::string& image_dir,
+                           const std::string& config_fn,
+                           const std::string& output_fn,
                            bool f_calib_laser_ori)
     : lsd_(config_fn)
     , f_calib_laser_ori_(f_calib_laser_ori)
+    , output_fn_(std::move(output_fn))
 {
   loadTargetConfig(config_fn);
   genCheckerboardPoints();
@@ -547,8 +551,9 @@ void LaserCalibCBPinhole::undistortPixels(const std::vector<cv::Point2f> &src,
 
 LaserCalibCBPinhole::LaserCalibCBPinhole(const std::string& image_dir,
                                          const std::string& config_fn,
+                                         const std::string& output_fn,
                                          bool f_calib_laser_ori)
-: LaserCalibCB(image_dir, config_fn, f_calib_laser_ori)
+: LaserCalibCB(image_dir, config_fn, output_fn, f_calib_laser_ori)
 {
   loadCamConfig(config_fn);
 
@@ -676,8 +681,9 @@ bool LaserCalibCBPinhole::solveCheckerBoardRt(ImCalibPtr p_im)
 
 LaserCalibCBCamodocal::LaserCalibCBCamodocal(const std::string& image_dir,
                                              const std::string& config_fn,
+                                             const std::string& output_fn,
                                              bool f_calib_laser_ori)
-: LaserCalibCB(image_dir, config_fn, f_calib_laser_ori)
+: LaserCalibCB(image_dir, config_fn, output_fn, f_calib_laser_ori)
 {
   loadCamConfig(config_fn);
 
@@ -753,19 +759,20 @@ void LaserCalibCBCamodocal::pixel2Normal(const Eigen::Vector2d &pt,
 LaserCalibCBPtr createLaserCalib(const std::string& model,
                                  const std::string& image_dir,
                                  const std::string& config_fn,
+                                 const std::string& output_fn,
                                  bool f_calib_laser_ori)
 {
   if (model == "pinhole")
   {
     LaserCalibCBPinholePtr p_laser_calib = std::make_shared<LaserCalibCBPinhole>
-        (image_dir, config_fn, f_calib_laser_ori);
+        (image_dir, config_fn, output_fn, f_calib_laser_ori);
     return p_laser_calib;
   }
   else if (model == "camodocal")
   {
     LaserCalibCBCamodocalPtr p_laser_calib =
         std::make_shared<LaserCalibCBCamodocal>(
-            image_dir, config_fn, f_calib_laser_ori);
+            image_dir, config_fn, output_fn, f_calib_laser_ori);
     return p_laser_calib;
   }
   else

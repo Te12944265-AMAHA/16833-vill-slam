@@ -72,7 +72,9 @@ public:
    * @param env_config_fn  environment config file, laser detection params
    * @param cam_config_fn  camera intrinsics config file
    */
-  explicit LaserCalibCB(const std::string& image_dir, const std::string& config_fn,
+  explicit LaserCalibCB(const std::string& image_dir,
+                        const std::string& config_fn,
+                        const std::string& output_fn,
                         bool f_calib_laser_ori);
 
   ~LaserCalibCB();
@@ -252,6 +254,8 @@ protected:
   double cb_square_size_;
   cv::Size cb_pattern_size_;
   std::vector<cv::Point3f> cb_pts_;
+
+  std::string output_fn_;
 };
 
 class LaserCalibCBPinhole : public LaserCalibCB
@@ -259,6 +263,7 @@ class LaserCalibCBPinhole : public LaserCalibCB
 public:
   explicit LaserCalibCBPinhole(const std::string& image_dir,
                                const std::string& config_fn,
+                               const std::string& output_fn,
                                bool f_calib_laser_ori);
 
 private:
@@ -286,6 +291,7 @@ class LaserCalibCBCamodocal : public LaserCalibCB
 public:
   explicit LaserCalibCBCamodocal(const std::string& image_dir,
                                  const std::string& config_fn,
+                                 const std::string& output_fn,
                                  bool f_calib_laser_ori);
 
 private:
@@ -315,6 +321,7 @@ typedef std::shared_ptr<LaserCalibCBCamodocal> LaserCalibCBCamodocalPtr;
 LaserCalibCBPtr createLaserCalib(const std::string& model,
                                  const std::string& image_dir,
                                  const std::string& config_fn,
+                                 const std::string& output_fn,
                                  bool f_calib_laser_ori);
 
 #endif //VIO_BLASER_LASER_CALIB_H

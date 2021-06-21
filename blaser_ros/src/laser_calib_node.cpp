@@ -26,6 +26,7 @@ int main(int argc, char **argv)
   std::string image_dir;
   std::string config_fn;
   std::string cam_model; // pinhole or camodocal
+  std::string output_fn;
   bool calib_laser_origin;
 
   // handle program options
@@ -41,6 +42,9 @@ int main(int argc, char **argv)
       ("calib-origin",
           po::bool_switch(&calib_laser_origin)->default_value(false),
           "calibrate laser origin, default to false")
+      ("output,o",
+          po::value<std::string>(&output_fn)->default_value("calib_results.txt"),
+          "output .txt file containing calibration result and 3D laser points")
   ;
 
   po::variables_map vm;
@@ -61,7 +65,7 @@ int main(int argc, char **argv)
   }
 
   auto laser_calib = createLaserCalib(cam_model, image_dir, config_fn,
-                                      calib_laser_origin);
+                                      output_fn, calib_laser_origin);
 
   laser_calib->examineByImage();
 
