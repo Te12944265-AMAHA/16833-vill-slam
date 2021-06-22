@@ -119,10 +119,24 @@ private:
    */
   void generateHSVMasks(const cv::Mat& im_hsv, cv::Mat& hsv_mask) const;
 
+  /**
+   * Visualize laser stripe detection result using opencv imshow for debug
+   * @param im_ori original image
+   * @param hsv_mask
+   * @param im_v V (value) channel of masked HSV image
+   * @param laser_pixels detected laser pixel coordinates
+   */
+  void visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
+                 const cv::Mat &im_v,
+                 const std::vector<cv::Point2f> &laser_pixels) const;
+
   // camera intrinsics
   const bool f_intrisics_;
   cv::Mat K_;
   cv::Mat D_;
+
+  int height_;
+  int width_;
 
   // two red threshold, lower and higher bounds
   // HSV masks. for range covering hue=180/0 (eg. red), vector size = 2
@@ -140,6 +154,9 @@ private:
 
   // algorithm parameters
   cv::Mat mask_dilate_kernel_, mask_close_kernel_;
+
+  // control parameters
+  bool f_vis_;
 };
 
 #endif //VIO_BLASER_LASER_STRIPE_DETECTOR_H

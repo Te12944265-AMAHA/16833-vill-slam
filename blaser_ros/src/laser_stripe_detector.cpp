@@ -59,6 +59,12 @@ bool LaserStripeDetector::detectLaserStripe(cv::Mat &im,
   // 5. reject outlier
   rejectOutliers(CoM_pts, laser_pts);
 
+  // 6. visualize
+  if (f_vis_)
+  {
+    visualize(im, hsv_mask, im_v, laser_pts);
+  }
+
   return laser_pts.size() >= MIN_LASER_PTS;
 }
 
@@ -89,11 +95,11 @@ void LaserStripeDetector::loadEnvConfig(const std::string &env_config_fn)
   val_ratio_ = (val_ratio_ > 0) ? val_ratio_ : 0.1;
 
   env_fs["laser_ROI"] >> roi;
-  int width, height;
-  env_fs["image_width"] >> width;
-  env_fs["image_height"] >> height;
-  laser_ROI_ = cv::Rect(roi[0], roi[2], width - roi[0] - roi[1],
-                        height - roi[2] - roi[3]);
+  env_fs["width"] >> width_;
+  env_fs["height"] >> height_;
+  env_fs["vis_laser_detection"] >> f_vis_;
+  laser_ROI_ = cv::Rect(roi[0], roi[2], width_ - roi[0] - roi[1],
+                        height_ - roi[2] - roi[3]);
 
   cout << "*** Laser stripe detector params ***" << endl
       << "\tmask hue min " << hue_min_ << endl
@@ -221,4 +227,68 @@ void LaserStripeDetector::generateHSVMasks(const cv::Mat& im_hsv, cv::Mat& hsv_m
     cv::inRange(im_hsv, cv::Scalar(hue_min_, sat_min_, val_min),
                         cv::Scalar(hue_max_, 255     , 255    ), hsv_mask);
   }
+}
+
+void
+LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
+                               const cv::Mat &im_v,
+                               const std::vector<cv::Point2f> &laser_pixels) const
+{
+  // compose original image with colored masks
+  cv::Mat im_black(height_, width_, CV_8UC1, 0.0);
+
+  std::vector<cv::Mat> v_hsv_mask_green, v_fisheye_mask_blue;
+  cv::Mat hsv_mask_green, mask_color, im_mask;
+
+  v_hsv_mask_green.push_back(im_black);
+  v_hsv_mask_green.push_back(hsv_mask);
+  v_hsv_mask_green.push_back(im_black);
+  cv::merge(v_hsv_mask_green, hsv_mask_green);
+
+  // generate blue ROI mask
+  cv::Mat roi_mask_blue(height_, width_, CV_8UC3, cv::Scalar(0, 0, 0));
+  roi_mask_blue(laser_ROI_).setTo(cv::Scalar(255, 0, 0));
+  mask_color = hsv_mask_green + roi_mask_blue;
+  /*
+  v_fisheye_mask_blue.push_back(fisheye_mask_);
+  v_fisheye_mask_blue.push_back(im_black);
+  v_fisheye_mask_blue.push_back(im_black);
+  cv::merge(v_fisheye_mask_blue, fisheye_mask_blue);
+  mask_color = hsv_mask_green + fisheye_mask_blue;
+  */
+
+  cv::addWeighted(im_ori, 0.8, mask_color, 0.2, 0.0, im_mask);
+
+  // draw image with laser points
+  cv::Mat im_laser;
+  im_ori.copyTo(im_laser);
+  for (const auto& laser_pixel : laser_pixels)
+    cv::circle(im_laser, laser_pixel, 0, cv::Scalar(0, 255, 0), 2);
+
+  // concat four visualization images
+  cv::Mat im_hconcat1, im_hconcat2, im_concat;
+  cv::Mat im_v_C3;
+  std::vector<cv::Mat> v_im_v_C3{im_v, im_v, im_v};
+  cv::merge(v_im_v_C3, im_v_C3);
+  cv::hconcat(im_ori , im_mask , im_hconcat1);
+  cv::hconcat(im_v_C3, im_laser, im_hconcat2);
+  cv::vconcat(im_hconcat1, im_hconcat2, im_concat);
+
+  // put text on image
+  cv::putText(im_concat, "(a) Raw image",
+              cv::Point2i(10, 40),
+              cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+  cv::putText(im_concat, "(b) HSV & ROI masks",
+              cv::Point2i(width_ + 10, 40),
+              cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+  cv::putText(im_concat, "(c) Masked-out intensity image",
+              cv::Point2i(10, height_ + 40),
+              cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+  cv::putText(im_concat, "(d) Laser detection result",
+              cv::Point2i(width_ + 10, height_ + 40),
+              cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+
+  cv::imshow("laser detection visualization", im_concat);
+  cv::waitKey(50);
+  //cv::imwrite("/home/dcheng/tmp/laser_ring_detect_vis.png", im_concat);
 }
