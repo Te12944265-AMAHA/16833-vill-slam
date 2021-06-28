@@ -21,7 +21,7 @@ LaserDetector::LaserDetector(std::string &config_fn, const std::string &nh_name,
   m_camera_ = camodocal::CameraFactory::instance()
       ->generateCameraFromYamlFile(config_fn);
 
-  laser_im_sub_ = nh_.subscribe("/blaser_camera/image_dark", 10,
+  laser_im_sub_ = nh_.subscribe(image_profile_topic_, 10,
                                 &LaserDetector::laser_im_cb, this);
   laser_pc_pub_ = nh_.advertise<sensor_msgs::PointCloud>("laser_points", 10);
   laser_vis_im_pub_ = nh_.advertise<sensor_msgs::Image>("laser_vis_image", 10);
@@ -36,9 +36,11 @@ LaserDetector::LaserDetector(std::string &config_fn, const std::string &nh_name,
 void LaserDetector::readParams(const std::string &config_fn)
 {
   cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
 
   fs["laser_plane"] >> laser_plane_;
   fs["laser_depth_range"] >> laser_depth_range_;
+  fs["image_profile_topic"] >> image_profile_topic_;
 }
 
 void LaserDetector::laser_im_cb(const sensor_msgs::ImageConstPtr im_msg)

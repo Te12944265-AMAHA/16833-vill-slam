@@ -23,7 +23,7 @@ RingLaserTriangulator::RingLaserTriangulator(std::string &config_fn,
   m_camera_ = camodocal::CameraFactory::instance()
       ->generateCameraFromYamlFile(config_fn);
 
-  laser_im_sub_ = nh_.subscribe("/ximea/image_profile", 10,
+  laser_im_sub_ = nh_.subscribe(image_profile_topic_, 10,
                                 &RingLaserTriangulator::laser_im_cb, this);
   laser_pc_pub_ = nh_.advertise<sensor_msgs::PointCloud>("laser_points", 10);
   laser_vis_im_pub_ = nh_.advertise<sensor_msgs::Image>("laser_vis_image", 10);
@@ -38,9 +38,13 @@ RingLaserTriangulator::RingLaserTriangulator(std::string &config_fn,
 void RingLaserTriangulator::readParams(const std::string &config_fn)
 {
   cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
+
   fs["laser_plane"] >> laser_plane_;
 
   fs["laser_distance_range"] >> laser_distance_range_;
+
+  fs["image_profile_topic"] >> image_profile_topic_;
 }
 
 void RingLaserTriangulator::laser_im_cb(const sensor_msgs::ImageConstPtr im_msg)

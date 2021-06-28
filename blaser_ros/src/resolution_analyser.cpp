@@ -13,6 +13,7 @@ LaserProjector::LaserProjector(const std::string& config_fn, double theta)
 : theta_(theta) // theta is manually given because it changes in the program
 {
   cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
 
   fs["baseline"] >> baseline_;
   fs["elevation_min"] >> elevation_min_;
@@ -58,6 +59,7 @@ DepthDistribution::DepthDistribution(const std::string &config_fn)
 void DepthDistribution::readParams(const std::string &config_fn)
 {
   cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
 
   std::string type_name;
   fs["depth_type"] >> type_name;
@@ -274,6 +276,7 @@ double ResolutionAnalyser::evalResAtDepth(double depth,
 void ResolutionAnalyser::readParam(const std::string &config_fn)
 {
   cv::FileStorage fs(config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
 
   fs["theta_min"] >> theta_min_;
   fs["theta_max"] >> theta_max_;

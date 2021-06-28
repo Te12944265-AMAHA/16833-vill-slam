@@ -58,6 +58,8 @@ private:
   ros::Subscriber laser_im_sub_;
   ros::Publisher laser_pc_pub_;
   ros::Publisher laser_vis_im_pub_;
+
+  std::string image_profile_topic_;
 };
 
 #endif //LASER_DETECTOR_LASER_DETECTOR_H

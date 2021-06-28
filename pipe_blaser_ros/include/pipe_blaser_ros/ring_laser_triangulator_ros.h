@@ -46,6 +46,8 @@ private:
   ros::Subscriber laser_im_sub_;
   ros::Publisher laser_pc_pub_;
   ros::Publisher laser_vis_im_pub_;
+
+  std::string image_profile_topic_;
 };
 
 #endif //SRC_RING_LASER_TRIANGULATOR_ROS_H

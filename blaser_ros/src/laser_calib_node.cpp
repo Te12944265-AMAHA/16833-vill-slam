@@ -77,4 +77,6 @@ int main(int argc, char **argv)
   Eigen::Vector2d fan_lb, fan_rb;
   laser_calib->solveLaserParams(plane_param, laser_ori, Rcl, tcl, fan_lb,
                                 fan_rb);
+
+  return 0;
 }

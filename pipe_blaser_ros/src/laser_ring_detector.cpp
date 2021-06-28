@@ -187,6 +187,7 @@ void LaserRingDetector::loadConfig(const std::string &laser_extract_config_fn,
 {
   // open config file
   cv::FileStorage fs(laser_extract_config_fn, cv::FileStorage::READ);
+  assert(fs.isOpened() && "Failed to open config file!");
   cout << "*** Load laser stripe parameter from " << laser_extract_config_fn
        << " at namespace [" << ns << "] ***" << endl;
 
