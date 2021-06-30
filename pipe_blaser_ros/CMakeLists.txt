@@ -81,6 +81,9 @@ add_executable(ximea_camera_driver
 
 target_link_libraries(ximea_camera_driver ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+add_executable(fisheye_mask_generator
+  src/fisheye_mask_generator.cpp)
+target_link_libraries(fisheye_mask_generator ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 #############
 ## Testing ##
