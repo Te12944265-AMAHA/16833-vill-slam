@@ -85,9 +85,16 @@ void FisheyeMaskGenerator::maskFoVPixels(cv::Mat &mask, double fov) const
 
       if (calcPointLoSAngle(pt_norm) < fov / 2) // half of FoV
       {
-        mask.at<uint8_t>(y, x) = 255u;
+        mask.at<uint8_t>(y, x) = 100u; // intermediate value
       }
     }
+
+  // only keep the large circle in the center using flood fill
+  Eigen::Vector2d im_center;
+  camera_->spaceToPlane(Eigen::Vector3d(0, 0, 1), im_center);
+  cv::floodFill(mask, cv::Point2d(im_center[0], im_center[1]), 255);
+  // erase other intermediate pixels (val == 100)
+  cv::threshold(mask, mask, 125, 255, cv::THRESH_BINARY);
 }
 
 void FisheyeMaskGenerator::clickAndMaskPolePolygon(const cv::Mat& im,
