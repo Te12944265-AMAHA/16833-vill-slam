@@ -2644,3 +2644,65 @@ bool Estimator::laserCorrectScale(const Matrix3d& Rwi0)
 
   return true;
 }
+
+bool Estimator::checkFeaturePoint(const Vector3d &p_w)
+{
+  // 1. find a close feature point
+  FeaturePerId* feature_match = nullptr;
+  double min_dist = std::numeric_limits<double>::max();
+  for (auto& it_per_id : f_manager.feature)
+  {
+    if (it_per_id.feature_per_frame.size() < 2 ||
+        it_per_id.start_frame >= WINDOW_SIZE - 2 ||
+        it_per_id.solve_flag == 0)
+      continue;
+
+    if ((it_per_id.pt_w_est - p_w).norm() < min_dist)
+    {
+      min_dist = (it_per_id.pt_w_est - p_w).norm();
+      feature_match = &it_per_id;
+    }
+  }
+
+  if (!feature_match) // 2cm
+  {
+    cout << "No feature match found at " << p_w.transpose() << endl;
+    return false; // no match found
+  }
+
+  cout << "Found feature match with distance " << min_dist << "m to clicked point" << endl;
+
+  // 2. find the primary frame
+  int start_frame_idx;
+  bool is_fol = f_manager.isFeatureOnLaser(*feature_match);
+  start_frame_idx = is_fol ? feature_match->laser_start_frame : feature_match->start_frame;
+
+  // 3. print feature details
+  cout << "Feature is " << (is_fol ? "" : "not ") << "FoL" << endl
+       << "  pt_w: " << feature_match->pt_w_est.transpose() << endl
+       << "  estimated depth: " << feature_match->estimated_depth << endl
+       << "  " << (is_fol ? "laser " : "") << "primary frame idx: " << start_frame_idx << endl
+       << "  primary frame uv: " << feature_match->feature_per_frame[start_frame_idx].uv.transpose() << endl;
+  if (is_fol)
+  {
+    cout << "  laser depth: " << feature_match->laser_depth << endl;
+  }
+
+  // 4. visualize the feature on its primary frame image.
+  // find image
+  auto it_im = ori_images.find(Headers[start_frame_idx].stamp.toSec());
+  if (it_im == ori_images.end())
+    return false;
+  cv::Mat im_vis;
+  it_im->second->image.copyTo(im_vis);
+
+  // circle the feature on the image
+  cv::Point2d feature_uv(
+      feature_match->feature_per_frame[start_frame_idx].uv(0),
+      feature_match->feature_per_frame[start_frame_idx].uv(1)
+      );
+  cv::circle(im_vis, feature_uv, 16, cv::Scalar(0, 255, 0));
+  cv::imshow("3d-image feature match", im_vis);
+  cv::waitKey(10000);
+  return true;
+}

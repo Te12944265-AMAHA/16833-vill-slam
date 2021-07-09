@@ -117,6 +117,17 @@ public:
 
   bool visFeatureTypeOnImage(int frame_idx, cv::Mat& im_out);
 
+  /**
+   * Given a 3D point in the world frame, check the visual feature's status
+   * 1. Find close feature point
+   * 2. Visualize its UV on its primary frame image.
+   * 3. Print out its attributes (tbd)
+   * @param p_w
+   * @return true if there's a feature point close to the give location
+   */
+  bool checkFeaturePoint(const Vector3d& p_w);
+
+
   enum SolverFlag
   {
     INITIAL,
