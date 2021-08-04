@@ -147,9 +147,14 @@ void ResolutionAnalyser::evalRes()
 
   // 2. plot the result
   plt::plot(thetas, ress);
-  plt::title("Resolution v.s. laser angle");
-  plt::xlabel("Laser angle (degree)");
-  plt::ylabel("resolution (pixel / mm)");
+  plt::title("Sensitivity vs laser leaning angle");
+  plt::xlabel("Laser leaning angle (degree)");
+  plt::ylabel("Sensitivity (pixel / mm)");
+
+  double max_res = 0.0;
+  for (double res : ress)
+    max_res = std::max(max_res, res);
+  plt::ylim(0.0, max_res * 1.1);
   plt::show();
 }
 
@@ -170,13 +175,13 @@ void ResolutionAnalyser::evalRes(const std::vector<double> &thetas)
 
   // 2. plot
   plt::subplot(2,1,1);
-  plt::title("resolution with different laser angles in degree, 0 is vertical");
+  plt::title("Sensitivity v.s. depth with various laser leaning angles");
   for (int i = 0; i < thetas.size(); i++)
   {
     std::string angle_str = std::to_string(int(round(thetas[i] / M_PI * 180)));
     plt::named_plot(angle_str, depths, ress_thetas[i]);
   }
-  plt::ylabel("resolution (pixel / mm)");
+  plt::ylabel("Sensitivity (pixel / mm)");
   plt::xlabel("depth (m)");
   plt::legend();
   plt::subplot(2,1,2);
@@ -211,8 +216,8 @@ double ResolutionAnalyser::evalResAtTheta(double theta,
     weights.push_back(weighted_depth.second);
   }
 
-  cout << "Avg resolution at theta = " << theta / M_PI * 180 << "deg is "
-       << avr_res << endl;
+  cout << "Average sensitivity at laser leaning angle = " << theta / M_PI * 180
+       << " (degree) is " << avr_res << endl;
 
   // 2. visualize res vs depth and weighted depths in the same figure
   if (is_vis)
@@ -265,8 +270,19 @@ double ResolutionAnalyser::evalResAtDepth(double depth,
   // 2. plot
   if (is_vis)
   {
-    plt::plot(elevations, ress);
-    plt::title("res vs elevation");
+    std::vector<double> elevations_degree(elevations.size());
+    for (int i = 0; i < elevations.size(); i++)
+      elevations_degree[i] = elevations[i] * 180 / M_PI;
+    plt::plot(elevations_degree, ress);
+    plt::title("Sensitivity vs elevation angle");
+    plt::xlabel("Elevation angle (degree)");
+    plt::ylabel("Sensitivity (pixel / mm)");
+
+    // get max resolution
+    double max_res = 0.0;
+    for (double res : ress)
+      max_res = std::max(max_res, res);
+    plt::ylim(0.0, max_res * 1.1);
     plt::show();
   }
 
@@ -288,8 +304,8 @@ int main(int argc, char** argv)
   ResolutionAnalyser res_analyser("config/resolution_analyser/res_analyser.yaml");
   std::vector<double> thetas{0, M_PI / 12, M_PI / 6, M_PI / 4};
   res_analyser.evalRes(thetas);
-  //res_analyser.evalRes();
+  res_analyser.evalRes();
 
-  //LaserProjector laser_projector("config/resolution_analyser/res_analyser.yaml", 0);
-  //res_analyser.evalResAtDepth(0.03, laser_projector, true);
+  LaserProjector laser_projector("config/resolution_analyser/res_analyser.yaml", 0);
+  res_analyser.evalResAtDepth(0.03, laser_projector, true);
 }
