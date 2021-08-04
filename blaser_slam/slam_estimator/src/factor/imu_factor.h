@@ -213,6 +213,11 @@ public:
         //ROS_ASSERT(fabs(jacobian_speedbias_j.minCoeff()) < 1e8);
       }
     }
+    if (!jacobians || res_stat_count_jacobian)
+    {
+      cost_cnt++;
+      cost_sum += residual.cwiseAbs().sum();
+    }
 
     return true;
   }
@@ -224,5 +229,20 @@ public:
   //void checkJacobian(double **parameters);
   IntegrationBase *pre_integration;
 
+public:
+  static void clearCost()
+  {
+    cost_sum = 0;
+    cost_cnt = 0;
+  }
+
+  static void printCost()
+  {
+    cout << "IMU cost sum by " << cost_cnt << " factors: " << cost_sum << endl;
+  }
+
+private:
+  static double cost_sum;
+  static size_t cost_cnt;
 };
 

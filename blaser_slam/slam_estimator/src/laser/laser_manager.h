@@ -57,7 +57,7 @@ public:
    * @param laser_pts output laser points
    * @return false if no laser points found
    */
-  bool findLaserPointsInWindow2D(Vector2d &uv, size_t seq, double radius,
+  bool findLaserPointsInWindow2D(const Vector2d &uv, size_t seq, double radius,
                                  std::vector<LaserPoint> &laser_pts);
 
   /**
@@ -84,7 +84,8 @@ public:
    * @param min_dist output pixel distance from (u,v) to closest laser point
    * @return false if no laser points found
    */
-  bool findLaserPointsInFrame2D(Vector2d &uv, double radius, LaserFrameConstPtr lf,
+  bool findLaserPointsInFrame2D(const Vector2d &uv, double radius,
+                                LaserFrameConstPtr lf,
                                 std::vector<LaserPoint> &laser_pts,
                                 double &min_dist);
 

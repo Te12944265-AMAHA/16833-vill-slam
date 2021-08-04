@@ -1,3 +1,6 @@
 blaser_ros/calib_data/
 pipe_blaser_ros/calib_data/
 /.idea/
+blaser-pcl-core/
+blaser_slam/pose_graph/
+blaser_slam/support_files/

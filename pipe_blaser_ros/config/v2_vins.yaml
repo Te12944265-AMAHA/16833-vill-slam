@@ -13,17 +13,17 @@ camera_name: camera
 image_width: 1232
 image_height: 1028
 mirror_parameters:
-   xi: 1.1433395501110735e+00
+   xi: 1.1764148287627172e+00
 distortion_parameters:
-   k1: -2.0135430224825437e-01
-   k2: 1.1030501799612423e-02
-   p1: -1.6406493400839060e-03
-   p2: 2.3660742179202796e-04
+   k1: -1.9248010779099942e-01
+   k2: 8.3679547368203568e-03
+   p1: 8.3808053729280608e-05
+   p2: -4.1597973820563380e-04
 projection_parameters:
-   gamma1: 5.5040347906462910e+02
-   gamma2: 5.5084077007429016e+02
-   u0: 6.0915148165368157e+02
-   v0: 5.2276247282775512e+02
+   gamma1: 5.5643472559102486e+02
+   gamma2: 5.5589821723947011e+02
+   u0: 6.0948552492917770e+02
+   v0: 5.2350117336503433e+02
 
 # Extrinsic parameter between IMU and Camera.
 estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
@@ -42,13 +42,13 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.04612856, 0.0069185, -0.02162752]
+   data: [-0.02767714,  0.0041511 , -0.01297651]
 
 
 #feature traker paprameters
 max_cnt: 100            # max feature number in feature tracking
-min_dist: 20            # min distance between two features 
-corner_quality: 0.01
+min_dist: 45            # min distance between two features 
+corner_quality: 0.001
 freq: 0                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
 F_threshold: 1.0        # ransac threshold (pixel)
 show_track: 1           # publish tracking image as topic
@@ -82,10 +82,10 @@ pose_graph_save_path: "/home/ubuntu/Desktop/vins_output/pose_graph/" # save and 
 
 #unsynchronization parameters
 estimate_td: 1                      # online estimate time offset between camera and imu
-td: -0.02                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+td: 0.0 # -0.02                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
 
 #rolling shutter parameters
-rolling_shutter: 0                  # 0: global shutter camera, 1: rolling shutter camera
+rolling_shutter: 1                  # 0: global shutter camera, 1: rolling shutter camera
 rolling_shutter_tr: 0               # unit: s. rolling shutter read out time per frame (from data sheet). 
 
 static_initialization: 0 
@@ -105,7 +105,8 @@ center_u: 609.1514816
 center_v: 522.7624728277551
 
 # laser triangulation parameters
-laser_plane: [0.328661, 0.573384, -100.0, 9.79346]
+#laser_plane: [0.328661, 0.573384, -100.0, 9.79346]
+laser_plane: [0.554838, 0.50734, -100., 9.74935]
 laser_distance_range: [0.01, 1.0] # distance between 3d point & camera
 
 # laser detection parameters

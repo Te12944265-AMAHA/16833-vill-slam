@@ -17,7 +17,7 @@ LaserManager::LaserManager()
   srand((unsigned) time(0));
 }
 
-bool LaserManager::findLaserPointsInWindow2D(Vector2d &uv, size_t seq,
+bool LaserManager::findLaserPointsInWindow2D(const Vector2d &uv, size_t seq,
     double radius, std::vector<LaserPoint> &laser_pts)
 {
   laser_pts.clear();
@@ -86,7 +86,7 @@ bool LaserManager::findLaserPointsInFrame2DStripe(Vector2d &uv, double radius,
   return left > right;
 }
 
-bool LaserManager::findLaserPointsInFrame2D(Vector2d &uv, double radius,
+bool LaserManager::findLaserPointsInFrame2D(const Vector2d &uv, double radius,
                                             LaserFrameConstPtr lf,
                                             std::vector<LaserPoint> &laser_pts,
                                             double &min_dist)

@@ -111,6 +111,7 @@ void FisheyeMaskGenerator::clickAndMaskPolePolygon(const cv::Mat& im,
   cv::setMouseCallback(click_wn_, &FisheyeMaskGenerator::mouseCB,
                        &clicked_pixels);
   cv::imshow(click_wn_, fov_masked_im);
+  // cv::imwrite("fov_masked_im.png", fov_masked_im); // log visualization image
   // keep drawing line
   size_t pts_cnt = 0;
   while (cv::waitKey(100) != 'y')
@@ -122,7 +123,8 @@ void FisheyeMaskGenerator::clickAndMaskPolePolygon(const cv::Mat& im,
     cv::line(fov_masked_im,
              clicked_pixels[clicked_pixels.size() - 1],
              clicked_pixels[clicked_pixels.size() - 2],
-             cv::Scalar(255, 255, 255));
+             cv::Scalar(255, 255, 255),
+             1); // thickness
     cv::imshow(click_wn_, fov_masked_im);
     cv::setMouseCallback(click_wn_, &FisheyeMaskGenerator::mouseCB,
                          &clicked_pixels);
@@ -157,6 +159,7 @@ void FisheyeMaskGenerator::visMaskedImage(const cv::Mat &im,
   cv::Mat im_masked_vis;
   cv::addWeighted(im, 0.7, mask_red, 0.3, 0.0, im_masked_vis);
   cv::imshow("Mask generation visualization", im_masked_vis);
+  // cv::imwrite("masked_im.png", im_masked_vis); // log visualization image
   cv::waitKey(10000);
 }
 

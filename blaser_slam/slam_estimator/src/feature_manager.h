@@ -100,7 +100,7 @@ public:
   bool is_outlier;
   bool is_margin;
   double estimated_depth;
-  int solve_flag; // 0 haven't solve yet; 1 solve succ; 2 solve fail;
+  int solve_flag; // 0 haven't solve yet; 1 solve succ; 2 solve fail (depth < 0)
 
   Vector3d pt_w_est; // current estimation of position in world frame
 
@@ -112,7 +112,7 @@ public:
   double laser_stamp; // stamp of associated laser scan frame
   double laser_uv_min_dist;
   int laser_start_frame;
-  FeaturePerFrame laser_kf;
+  FeaturePerFrame laser_kf; // the keyframe where the uv is closest to laser
   double laser_kf_stamp;
   Vector3d laser_pt_w; // laser estimated 3d point position in world frame.
   BRIEF::bitset desc; // only computes descriptor for FeatureOnLaser
@@ -193,6 +193,8 @@ public:
   void updateFeaturePosWorld();
 
   bool getFeatureMinMax3D(Vector3d& min_pt, Vector3d& max_pt);
+
+
 
   list<FeaturePerId> feature;
   int last_track_num;

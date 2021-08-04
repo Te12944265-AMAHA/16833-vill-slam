@@ -84,8 +84,8 @@ class FeatureTracker
     vector<cv::Point2f> pts_velocity; // points velocity (pixel / s)
     vector<int> ids; // id(s) for each point
     vector<int> track_cnt; // tracked frame count of each feature point
-    map<int, cv::Point2f> cur_un_pts_map; // undistorted current points
-    map<int, cv::Point2f> prev_un_pts_map; // undistorted previous points
+    map<int, cv::Point2f> cur_un_pts_map; // id to normalized current points
+    map<int, cv::Point2f> prev_un_pts_map; // id to normalized previous points
     camodocal::CameraPtr m_camera;
     double cur_time;
     double prev_time;

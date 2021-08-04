@@ -26,9 +26,10 @@ const double FOCAL_LENGTH = 460.0;
 const int WINDOW_SIZE = 8;
 const int NUM_OF_CAM = 1;
 const int NUM_OF_F = 1000;
-//#define UNIT_SPHERE_ERROR
 
-extern double INIT_DEPTH;
+#define UNIT_SPHERE_ERROR
+
+extern double INIT_DEPTH; // 5.0m
 extern double MIN_PARALLAX;
 extern int ESTIMATE_EXTRINSIC;
 extern int STATIC_INITIALIZATION;
@@ -50,6 +51,7 @@ extern std::string EX_CALIB_RESULT_PATH;
 extern std::string VINS_RESULT_PATH;
 extern std::string IMU_TOPIC;
 extern std::string LASER_TOPIC;
+extern std::string IMAGE_TOPIC;
 extern double TD;
 extern double TR;
 extern int ESTIMATE_TD;
@@ -60,6 +62,8 @@ extern double CAM_VIS_LINE_WIDTH;
 
 extern camodocal::CameraPtr m_camera;
 extern std::string BRIEF_PATTERN_FILE;
+
+extern bool res_stat_count_jacobian;
 
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;

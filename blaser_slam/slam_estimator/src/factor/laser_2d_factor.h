@@ -25,6 +25,22 @@ public:
   static double sqrt_info;
   static double sum_t;
   int feature_idx_;
+
+public:
+  static void clearCost()
+  {
+    cost_sum = 0;
+    cost_cnt = 0;
+  }
+
+  static void printCost()
+  {
+    std::cout << "Laser cost sum by " << cost_cnt << " factors: " << cost_sum << std::endl;
+  }
+
+private:
+  static double cost_sum;
+  static size_t cost_cnt;
 };
 
 

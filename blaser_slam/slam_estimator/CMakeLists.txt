@@ -57,6 +57,7 @@ add_executable(slam_estimator
   src/factor/projection_factor.cpp
   src/factor/projection_td_factor.cpp
   src/factor/marginalization_factor.cpp
+  src/factor/imu_factor.cpp
   src/utility/utility.cpp
   src/utility/visualization.cpp
   src/utility/CameraPoseVisualization.cpp
@@ -97,6 +98,8 @@ add_executable(slam_estimator
   src/ThirdParty/VocabularyBinary.cpp
 
   src/encoder/encoder_manager.cpp
+
+  src/factor/residual_stat_iter_cb.cpp
   )
 add_dependencies(slam_estimator ${PROJECT_NAME}_gencfg)
 target_link_libraries(slam_estimator ${catkin_LIBRARIES}

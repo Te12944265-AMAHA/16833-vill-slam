@@ -46,7 +46,7 @@ void readParameters(ros::NodeHandle &n)
     }
     std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
 
-    fsSettings["image_topic"] >> IMAGE_TOPIC;
+    fsSettings["image_visual_topic"] >> IMAGE_TOPIC;
     fsSettings["imu_topic"] >> IMU_TOPIC;
     MAX_CNT = fsSettings["max_cnt"];
     MIN_DIST = fsSettings["min_dist"];

@@ -507,6 +507,14 @@ void mapping_status_callback(const std_msgs::UInt8 &status_msg)
   m_estimator.unlock();
 }
 
+void checkFeaturePointCallback(const geometry_msgs::PointStampedConstPtr msg)
+{
+  Vector3d p_w(msg->point.x, msg->point.y, msg->point.z);
+  m_estimator.lock(); // only use for debug, when bag is paused and estimator is idle
+  estimator.checkFeaturePoint(p_w);
+  m_estimator.unlock();
+}
+
 // thread: visual-inertial odometry
 void process()
 {
@@ -698,7 +706,7 @@ void process()
       pubOdometry(estimator, header);
       pubKeyPoses(estimator, header);
       pubCameraPose(estimator, header);
-      pubPointCloud(estimator, header);
+      pubPointCloud(estimator, header, false);
       pubTF(estimator, header);
       pubKeyframe(estimator);
       if (relo_msg != NULL)
@@ -756,13 +764,14 @@ int main(int argc, char **argv)
   ros::Subscriber sub_encoder = n.subscribe("/encoder/data_filter",
                                             100, encoder_callback);
 
-  //ros::Subscriber sub_ori_image = n.subscribe("/ximea/image_visual",
-  //                                            100, image_callback);
-  ros::Subscriber sub_ori_image = n.subscribe("/blaser_camera/image_hexp",
+  ros::Subscriber sub_ori_image = n.subscribe(IMAGE_TOPIC,
                                               100, image_callback);
 
   ros::Subscriber sub_mapping_status = n.subscribe("mapping_status",
       100, mapping_status_callback);
+
+  ros::Subscriber sub_3d_feature_check = n.subscribe("/clicked_point",
+                                                     100, checkFeaturePointCallback);
 
   dynamic_reconfigure::Server<slam_estimator::BlaserSLAMConfig> reconfigure_server;
   dynamic_reconfigure::Server<slam_estimator::BlaserSLAMConfig>::CallbackType reconfigure_f;

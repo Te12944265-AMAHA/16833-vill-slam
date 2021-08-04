@@ -24,7 +24,7 @@ void Estimator::setParameter()
   ProjectionTdFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
   ProjectionFixDepthTdFactor::sqrt_info =
       50 * FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
-  Laser2DFactor::sqrt_info = 2e6; // was 2e5
+  Laser2DFactor::sqrt_info = 1e5; // was 2e6
   P2LAnalyticICPFactor::sqrt_info = 1.0; // was 0.5
   P2LAnalyticICPFactor::qic = Quaterniond(ric[0]);
   P2LAnalyticICPFactor::tic = tic[0];
@@ -1018,13 +1018,10 @@ void Estimator::optimization()
   ceres::LossFunction *loss_function;
   //loss_function = new ceres::HuberLoss(1.0);
   loss_function = new ceres::CauchyLoss(1.0);
-
-  //todo maybe loss function is why cost and residual does not add up.
-  //  pass in null loss function to verify.
-  ceres::LossFunction *laser_loss_f = new ceres::HuberLoss(10.0);
+  ceres::LossFunction *laser_loss_function = new ceres::CauchyLoss(10.0);
 
   // problem for initial ICP to calculate covariance
-  bool f_handle_icp_underconstrain = true;
+  bool f_handle_icp_underconstrain = false;
   ceres::Problem icp_init_problem;
 
   //! 1. add to ceres the pointers of parameter arrays (state to optimize over)
@@ -1062,6 +1059,9 @@ void Estimator::optimization()
     //problem.SetParameterBlockConstant(para_Td[0]);
   }
 
+  for (int i = 0; i < f_manager.getFeatureCount(); i++)
+    problem.AddParameterBlock(para_Feature[i], 1);
+
   TicToc t_whole, t_prepare;
   // set initial values to parameters
   vector2double();
@@ -1078,6 +1078,7 @@ void Estimator::optimization()
     problem.AddResidualBlock(marginalization_factor, NULL,
                              last_marginalization_parameter_blocks);
   }
+
 
   cout << "[ceres prep] add margin res " << t_prepare.toc() << endl;
 
@@ -1191,6 +1192,7 @@ void Estimator::optimization()
   cout << "[ceres prep] pub laser visible " << t_prepare.toc() << endl;
 
   // add IMU residual
+  int imu_factor_cnt = 0;
   for (int i = 0; i < WINDOW_SIZE; i++)
   {
     int j = i + 1;
@@ -1199,14 +1201,16 @@ void Estimator::optimization()
     IMUFactor *imu_factor = new IMUFactor(pre_integrations[j]);
     problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i],
                              para_Pose[j], para_SpeedBias[j]);
+    imu_factor_cnt++;
   }
+  cout << "IMU factor count: " << imu_factor_cnt << endl;
 
   cout << "[ceres prep] imu residual " << t_prepare.toc() << endl;
 
   // add feature reproj error residual
   int f_m_cnt = 0;
   int feature_index = -1;
-  int f_nolaser_cnt = 0, f_laser_cnt = 0;
+  int f_nolaser_cnt = 0, f_laser_cnt = 0, proj_factor_cnt = 0;
   for (auto &it_per_id : f_manager.feature)
   {
     it_per_id.used_num = it_per_id.feature_per_frame.size();
@@ -1216,6 +1220,7 @@ void Estimator::optimization()
     if (!f_manager.isFeatureOnLaser(it_per_id)) // without laser depth
     {
       ++feature_index;
+      f_nolaser_cnt++;
 
       int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
 
@@ -1243,7 +1248,8 @@ void Estimator::optimization()
                                    para_Pose[imu_j], para_Ex_Pose[0],
                                    para_Feature[feature_index], para_Td[0]);
 
-          f_nolaser_cnt++;
+          proj_factor_cnt++;
+
           /*
           double **para = new double *[5];
           para[0] = para_Pose[imu_i];
@@ -1285,6 +1291,7 @@ void Estimator::optimization()
         Vector3d pts_j = it_per_frame.point;
         if (ESTIMATE_TD)
         {
+
           ProjectionTdFactor *f_td =
               new ProjectionTdFactor(pts_i, pts_j,
                                      it_per_id.laser_kf.velocity,
@@ -1296,21 +1303,19 @@ void Estimator::optimization()
           problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i],
                                    para_Pose[imu_j], para_Ex_Pose[0],
                                    para_Feature[feature_index], para_Td[0]);
-
-          // todo add depth cost
-          //assert(it_per_id.laser_depth > 0);
-          if (it_per_id.laser_depth > 0)
-          {
-            f_laser_cnt++;
-            Laser2DFactor *laser_2d_factor =
-                new Laser2DFactor(it_per_id.laser_depth, 0);
-            problem.AddResidualBlock(laser_2d_factor, NULL,
-                                     para_Feature[feature_index]);
-          }
+          proj_factor_cnt++;
 
         }
       }
-
+      if (it_per_id.laser_depth > 0)
+      {
+        f_laser_cnt++;
+        Laser2DFactor *laser_2d_factor =
+            new Laser2DFactor(it_per_id.laser_depth, 0);
+        problem.AddResidualBlock(laser_2d_factor, NULL, //laser_loss_function,
+                                 para_Feature[feature_index]);
+        cout << "FoL feature index in para_Feature block: " << feature_index << endl;
+      }
 
 
       // use the following code to avoid feature-on-laser residual
@@ -1344,6 +1349,7 @@ void Estimator::optimization()
   }
   cout << "feature no laser: " << f_nolaser_cnt << ", feature laser: "
        << f_laser_cnt << endl;
+  cout << "projection factor count: " << proj_factor_cnt << endl;
 
   ROS_DEBUG("visual measurement count: %d", f_m_cnt);
 
@@ -1351,6 +1357,7 @@ void Estimator::optimization()
 
   LaserPointCloudConstPtr laser_pc_w_window =
       l_manager.laserWindowToWorld(Rs, Ps, RIC[0], TIC[0], Headers);
+  /*
   std::shared_ptr<ICPAssociationCallback> icp_cb_ptr;
   std::vector<LaserMPAssociationPtr> pts;
   static const int LASER_PCD_SKIP = 10;
@@ -1450,6 +1457,7 @@ void Estimator::optimization()
          << laser_pt_cnt << endl;
     //map_.visualize(); // visualize before ICP alignment
   }
+   */
 
   // solve icp init problem
   /*
@@ -1535,7 +1543,7 @@ void Estimator::optimization()
 
   if (relocalization_info)
   {
-    //printf("set relocalization factor! \n");
+    printf("set relocalization factor! \n");
     ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
     problem.AddParameterBlock(relo_Pose, SIZE_POSE, local_parameterization);
     int retrive_feature_index = 0;
@@ -1573,6 +1581,9 @@ void Estimator::optimization()
 
   }
 
+  auto res_stat_iter_cb = std::make_shared<ResidualStatIterationCallback>();
+  options.callbacks.push_back(res_stat_iter_cb.get());
+
   options.update_state_every_iteration = true;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   //options.num_threads = 2;
@@ -1593,7 +1604,15 @@ void Estimator::optimization()
   ROS_DEBUG("solver costs: %f", t_solver.toc());
   map_.visualize(); // visualize map after ICP (shows final residuals)
 
+  // DEBUG: evaluate the problem to access residual, gradient, and jacobian
+  double cost;
+  std::vector<double> residuals;
+  std::vector<double> gradient;
+  ceres::CRSMatrix jacobian_matrix;
+  problem.Evaluate(ceres::Problem::EvaluateOptions(), &cost, &residuals, &gradient, &jacobian_matrix);
+
   double2vector();
+
 
   TicToc t_whole_marginalization;
   if (marginalization_flag == MARGIN_OLD)
@@ -2187,6 +2206,7 @@ bool Estimator::estFeatureLaserDepth(int frame_idx)
       //cout << "laser depth: " << laser_depth << endl;
       it_per_id.type = F_ON_L;
       it_per_id.solve_flag = 1;
+      //it_per_id.estimated_depth = laser_depth;
       it_per_id.laser_depth = laser_depth;
 
       // visualize and publish feature on image
@@ -2445,7 +2465,7 @@ void Estimator::estNewLaserColor()
             {
               ROS_WARN("PIXEL UV OUT OF IMAGE");
             }
-            
+
           }
           // average color, then brighten
           pt_rgb = pt_rgb / 3.0 * 1.5 + Vector3d::Ones() * 10;
@@ -2474,7 +2494,8 @@ bool Estimator::visFeatureTypeOnImage(int frame_idx, cv::Mat &im_out)
   // 2. mark all features on image
   for (const auto &f_id : f_manager.feature)
   {
-    if (f_id.feature_per_frame.size() + f_id.start_frame - 1 < frame_idx)
+    if (f_id.feature_per_frame.size() + f_id.start_frame - 1 < frame_idx
+     || f_id.start_frame > frame_idx) // if feature is not observed for frame_idx
       continue;
 
     cv::Scalar color;
@@ -2644,3 +2665,110 @@ bool Estimator::laserCorrectScale(const Matrix3d& Rwi0)
 
   return true;
 }
+
+bool Estimator::checkFeaturePoint(const Vector3d &p_w)
+{
+  // 1. find a close feature point
+  FeaturePerId* feature_match = nullptr;
+  double min_dist = std::numeric_limits<double>::max();
+  for (auto& it_per_id : f_manager.feature)
+  {
+    if (it_per_id.feature_per_frame.size() < 2 ||
+        it_per_id.start_frame >= WINDOW_SIZE - 2 ||
+        it_per_id.solve_flag == 0)
+      continue;
+
+    if ((it_per_id.pt_w_est - p_w).norm() < min_dist)
+    {
+      min_dist = (it_per_id.pt_w_est - p_w).norm();
+      feature_match = &it_per_id;
+    }
+  }
+
+  if (!feature_match) // 2cm
+  {
+    cout << "No feature match found at " << p_w.transpose() << endl;
+    return false; // no match found
+  }
+
+  cout << "Found feature match with distance " << min_dist << "m to clicked point" << endl;
+
+  // 2. find the primary frame
+  int start_frame_idx;
+  bool is_fol = f_manager.isFeatureOnLaser(
+      (const FeaturePerId &) *feature_match);
+  start_frame_idx = is_fol ? feature_match->laser_start_frame : feature_match->start_frame;
+  auto primary_frame = is_fol ? feature_match->laser_kf : feature_match->feature_per_frame[0];
+
+  // 3. print feature details
+  cout << "Feature is " << (is_fol ? "" : "not ") << "FoL" << endl
+       << "  pt_w: " << feature_match->pt_w_est.transpose() << endl
+       << "  estimated depth: " << feature_match->estimated_depth << endl
+       << "  " << (is_fol ? "laser " : "") << "primary frame idx: " << start_frame_idx << endl
+       << "  primary frame uv: " << primary_frame.uv.transpose() << endl;
+  if (is_fol)
+  {
+    cout << "  laser depth: " << feature_match->laser_depth << endl;
+  }
+
+  // 4. loop show the feature on all its frames
+  // find image
+  bool loop = true;
+  while (loop)
+  {
+    int frame_idx = feature_match->start_frame;
+    for (auto feature_frame : feature_match->feature_per_frame)
+    {
+      cout << "* feature frame # " << frame_idx << endl
+           << "\tuv: " << feature_frame.uv.transpose() << endl
+           << "\t3d point: " << feature_frame.point.transpose() << endl
+           << "\tvelocity: " << feature_frame.velocity.transpose() << endl;
+      // show feature circled on the image
+      if (!showPointOnImage(Headers[frame_idx].stamp.toSec(),
+                            feature_frame.uv[0], feature_frame.uv[1],
+                            "3d-image feature match"))
+      {
+        loop = false;
+        cv::destroyWindow("3d-image feature match");
+        break;
+      }
+
+      frame_idx++;
+    }
+  }
+  /*
+  auto it_im = ori_images.find(Headers[start_frame_idx].stamp.toSec());
+  if (it_im == ori_images.end())
+    return false;
+  cv::Mat im_vis;
+  it_im->second->image.copyTo(im_vis);
+
+  // circle the feature on the image
+  cv::Point2d feature_uv(primary_frame.uv(0), primary_frame.uv(1));
+  cv::circle(im_vis, feature_uv, 16, cv::Scalar(0, 255, 0));
+  cv::imshow("3d-image feature match", im_vis);
+  cv::waitKey(10000);
+   */
+  return true;
+}
+
+bool Estimator::showPointOnImage(double im_stamp, double u, double v,
+                                 const string &window_name)
+{
+  auto it_im = ori_images.find(im_stamp);
+  if (it_im == ori_images.end())
+  {
+    ROS_WARN("Image not found with time stamp");
+    return false;
+  }
+  cv::Mat im_vis;
+  it_im->second->image.copyTo(im_vis);
+
+  // circle the feature on the image
+  cv::Point2d pt(u, v);
+  cv::circle(im_vis, pt, 16, cv::Scalar(0, 255, 0));
+  cv::imshow(window_name, im_vis);
+  auto cmd = cv::waitKey(10000);
+  return cmd != 'q';
+}
+

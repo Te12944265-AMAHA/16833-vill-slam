@@ -21,6 +21,7 @@
 #include "factor/laser_2d_factor.h"
 #include "factor/p2l_analytic_icp_factor.h"
 #include "factor/encoder_factor.h"
+#include "factor/residual_stat_iter_cb.h"
 
 #include "laser/laser_manager.h"
 #include "laser/feature_laser.h"
@@ -116,6 +117,19 @@ public:
   void estNewLaserColor();
 
   bool visFeatureTypeOnImage(int frame_idx, cv::Mat& im_out);
+
+  /**
+   * Given a 3D point in the world frame, check the visual feature's status
+   * 1. Find close feature point
+   * 2. Visualize its UV on its primary frame image.
+   * 3. Print out its attributes (tbd)
+   * @param p_w
+   * @return true if there's a feature point close to the give location
+   */
+  bool checkFeaturePoint(const Vector3d& p_w);
+
+  bool showPointOnImage(double im_stamp, double u, double v,
+                        const string& window_name);
 
   enum SolverFlag
   {

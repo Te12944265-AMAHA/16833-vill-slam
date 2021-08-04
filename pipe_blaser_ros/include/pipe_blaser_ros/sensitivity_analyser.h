@@ -17,11 +17,17 @@ public:
 
   void evalSensitivityAtDiameters(std::vector<double> diameters);
 
+  void evalSensitivityAtBaselines(std::vector<double> baselines);
+
   double evalSensitivityAtDiameterBaseline(double diameter, double baseline);
 
 private:
   void evalSensitivityAtDiameter(double diameter,
                                  std::vector<double> &baselines,
+                                 std::vector<double> &sensitivities);
+
+  void evalSensitivityAtBaseline(double baseline,
+                                 std::vector<double> &diameters,
                                  std::vector<double> &sensitivities);
 
   double sensitivity2precision(double sensitivity);

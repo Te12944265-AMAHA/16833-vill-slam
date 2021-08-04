@@ -494,7 +494,6 @@ void LaserCalibCB::clickStripeEndsCb(int event, int x, int y, int flags, void * 
 {
   LaserCalibCB* p_calib = (LaserCalibCB*) param;
   Eigen::Vector3d pt_norm, pt_3d, pt_cb;
-  //todo end points are incorrect
   switch (event)
   {
     case cv::EVENT_LBUTTONDOWN:
