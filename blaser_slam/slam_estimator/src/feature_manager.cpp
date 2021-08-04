@@ -362,10 +362,12 @@ void FeatureManager::triangulate(Vector3d Ps[], Vector3d tic[], Matrix3d ric[])
     it_per_id.estimated_depth = svd_method;
     //it_per_id->estimated_depth = INIT_DEPTH;
 
+    /*
     if (it_per_id.estimated_depth < 0.1)
     {
       it_per_id.estimated_depth = INIT_DEPTH;
     }
+     */
 
   }
 }
@@ -501,7 +503,6 @@ void FeatureManager::removeBackShiftDepthLaser(Eigen::Matrix3d marg_R,
       else
       {
         it->laser_start_frame = 0;
-
 
         assert(it->start_frame == 0);
         double est_dep_j, laser_dep_j;
@@ -701,7 +702,7 @@ void FeatureManager::updateFeaturePosWorld()
   {
     if (it_per_id.feature_per_frame.size() < 2 ||
         it_per_id.start_frame >= WINDOW_SIZE - 2 ||
-        it_per_id.solve_flag != 1)
+        it_per_id.solve_flag == 0)
       continue;
 
     Vector3d w_pts_i;

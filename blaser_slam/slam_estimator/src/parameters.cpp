@@ -23,12 +23,15 @@ std::string EX_CALIB_RESULT_PATH;
 std::string VINS_RESULT_PATH;
 std::string IMU_TOPIC;
 std::string LASER_TOPIC;
+std::string IMAGE_TOPIC;
 double ROW, COL;
 double TD, TR;
 double IM_INTERVAL;
 double CAM_VIS_SCALE;
 double CAM_VIS_LINE_WIDTH;
 bool USE_ENCODER;
+
+bool res_stat_count_jacobian = true;
 
 camodocal::CameraPtr m_camera;
 std::string BRIEF_PATTERN_FILE;
@@ -60,6 +63,7 @@ void readParameters(ros::NodeHandle &n)
 
   fsSettings["imu_topic"] >> IMU_TOPIC;
   fsSettings["laser_topic"] >> LASER_TOPIC;
+  fsSettings["image_visual_topic"] >> IMAGE_TOPIC;
 
   SOLVER_TIME = fsSettings["max_solver_time"];
   NUM_ITERATIONS = fsSettings["max_num_iterations"];

@@ -1,4 +1,8 @@
 #include "marginalization_factor.h"
+#include "../parameters.h"
+
+double MarginalizationFactor::cost_sum = 0.;
+size_t MarginalizationFactor::cost_cnt = 0;
 
 void ResidualBlockInfo::Evaluate()
 {
@@ -317,7 +321,8 @@ std::vector<double *> MarginalizationInfo::getParameterBlocks(std::unordered_map
     return keep_block_addr;
 }
 
-MarginalizationFactor::MarginalizationFactor(MarginalizationInfo* _marginalization_info):marginalization_info(_marginalization_info)
+MarginalizationFactor::MarginalizationFactor(MarginalizationInfo* _marginalization_info)
+: marginalization_info(_marginalization_info)
 {
     int cnt = 0;
     for (auto it : marginalization_info->keep_block_size)
@@ -375,6 +380,14 @@ bool MarginalizationFactor::Evaluate(double const *const *parameters, double *re
                 jacobian.leftCols(local_size) = marginalization_info->linearized_jacobians.middleCols(idx, local_size);
             }
         }
+    }
+    if (!jacobians || res_stat_count_jacobian)
+    {
+      double residual_sum_abs = 0.;
+      for (int i = 0; i < n; i++)
+        residual_sum_abs += fabs(residuals[i]);
+      cost_sum += residual_sum_abs;
+      cost_cnt++;
     }
     return true;
 }

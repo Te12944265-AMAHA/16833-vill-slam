@@ -202,9 +202,9 @@ void pubKeyPoses(const Estimator &estimator, const std_msgs::Header &header)
 
   //static int key_poses_id = 0;
   key_poses.id = 0; //key_poses_id++;
-  key_poses.scale.x = 0.05;
-  key_poses.scale.y = 0.05;
-  key_poses.scale.z = 0.05;
+  key_poses.scale.x = 0.005;
+  key_poses.scale.y = 0.005;
+  key_poses.scale.z = 0.005;
   key_poses.color.r = 1.0;
   key_poses.color.a = 1.0;
 
@@ -268,8 +268,13 @@ void pubPointCloud(Estimator &estimator, const std_msgs::Header &header,
       continue;
     else if (estimator.f_manager.isFeatureOnLaser(it_per_id))
       intensity = 100; // features on Laser
-    else
-      intensity = 50; // features used but not on laser
+    else if (it_per_id.solve_flag == 1)
+      intensity = 67; // features used but not on laser
+    else if (it_per_id.solve_flag == 2) // solved but depth < 0
+      intensity = 34;
+    else if (it_per_id.solve_flag == 0) // not solved
+      intensity = 1;
+
 
       /*
     Vector3d w_pts_i;

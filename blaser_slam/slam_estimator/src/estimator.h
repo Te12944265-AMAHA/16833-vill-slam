@@ -21,6 +21,7 @@
 #include "factor/laser_2d_factor.h"
 #include "factor/p2l_analytic_icp_factor.h"
 #include "factor/encoder_factor.h"
+#include "factor/residual_stat_iter_cb.h"
 
 #include "laser/laser_manager.h"
 #include "laser/feature_laser.h"
@@ -127,6 +128,8 @@ public:
    */
   bool checkFeaturePoint(const Vector3d& p_w);
 
+  bool showPointOnImage(double im_stamp, double u, double v,
+                        const string& window_name);
 
   enum SolverFlag
   {

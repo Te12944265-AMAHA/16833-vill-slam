@@ -2,6 +2,8 @@
 
 Eigen::Matrix2d ProjectionTdFactor::sqrt_info;
 double ProjectionTdFactor::sum_t;
+double ProjectionTdFactor::cost_sum = 0.;
+size_t ProjectionTdFactor::cost_cnt = 0;
 
 ProjectionTdFactor::ProjectionTdFactor(const Eigen::Vector3d &_pts_i,
                                        const Eigen::Vector3d &_pts_j,
@@ -157,6 +159,11 @@ ProjectionTdFactor::Evaluate(double const *const *parameters, double *residuals,
           sqrt_info * velocity_j.head(2);
     }
   }
+  if (!jacobians || res_stat_count_jacobian)
+  {
+    cost_cnt++;
+    cost_sum += residual.cwiseAbs().sum();
+  }
   sum_t += tic_toc.toc();
 
   //std::cout << "Feature NO laser residuals: "
@@ -165,8 +172,6 @@ ProjectionTdFactor::Evaluate(double const *const *parameters, double *residuals,
   if (std::isnan(residual(0)))
   {
     std::cout << "nan!" << std::endl;
-    std::cout << "fuck you very much!" << std::endl;
-
   }
 
   return true;

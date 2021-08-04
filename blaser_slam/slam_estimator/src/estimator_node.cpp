@@ -706,7 +706,7 @@ void process()
       pubOdometry(estimator, header);
       pubKeyPoses(estimator, header);
       pubCameraPose(estimator, header);
-      pubPointCloud(estimator, header);
+      pubPointCloud(estimator, header, false);
       pubTF(estimator, header);
       pubKeyframe(estimator);
       if (relo_msg != NULL)
@@ -764,9 +764,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub_encoder = n.subscribe("/encoder/data_filter",
                                             100, encoder_callback);
 
-  //ros::Subscriber sub_ori_image = n.subscribe("/ximea/image_visual",
-  //                                            100, image_callback);
-  ros::Subscriber sub_ori_image = n.subscribe("/blaser_camera/image_hexp",
+  ros::Subscriber sub_ori_image = n.subscribe(IMAGE_TOPIC,
                                               100, image_callback);
 
   ros::Subscriber sub_mapping_status = n.subscribe("mapping_status",
