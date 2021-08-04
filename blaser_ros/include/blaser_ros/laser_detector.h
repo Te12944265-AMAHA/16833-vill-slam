@@ -29,8 +29,7 @@
 class LaserDetector
 {
 public:
-  explicit LaserDetector(std::string& config_fn, const std::string& nh_name,
-      std::string ns);
+  explicit LaserDetector(std::string& config_fn, const std::string& nh_name);
 
 private:
   void readParams(const std::string& config_fn);

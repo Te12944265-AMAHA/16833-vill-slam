@@ -54,10 +54,15 @@ bool LaserStripeDetector::detectLaserStripe(cv::Mat &im,
   val_min_ = ch_v.maxCoeff() * val_ratio_;
   val_min_ = (val_min_ > 0) ? val_min_ : 10;
   //printf("Set thresh V: max val %f, thresh %f\n", ch_v.maxCoeff(), val_min_);
-  findCoMColumn(ch_v, CoM_pts);
+  if (find_laser_per_column)
+    findCoMColumn(ch_v, CoM_pts);
+  else
+    findCoMRow(ch_v, CoM_pts);
+
 
   // 5. reject outlier
   rejectOutliers(CoM_pts, laser_pts);
+  //laser_pts = CoM_pts;
 
   // 6. visualize
   if (f_vis_)
@@ -98,6 +103,7 @@ void LaserStripeDetector::loadEnvConfig(const std::string &env_config_fn)
   env_fs["width"] >> width_;
   env_fs["height"] >> height_;
   env_fs["vis_laser_detection"] >> f_vis_;
+  env_fs["laser_horizontal"] >> find_laser_per_column;
   laser_ROI_ = cv::Rect(roi[0], roi[2], width_ - roi[0] - roi[1],
                         height_ - roi[2] - roi[3]);
 
@@ -158,6 +164,40 @@ bool LaserStripeDetector::findCoMColumn(Eigen::MatrixXd &im,
   return !CoM_pts.empty();
 }
 
+bool LaserStripeDetector::findCoMRow(Eigen::MatrixXd &im,
+                                     std::vector<cv::Point2f> &CoM_pts)
+{
+  Eigen::VectorXi row_max(im.rows());
+  Eigen::VectorXi val_max(im.rows());
+
+  Eigen::MatrixXf::Index max_index;
+  for (int rr = 0; rr < im.rows(); rr++)
+  {
+    val_max[rr] = (int)im.row(rr).maxCoeff(&max_index);
+    row_max[rr] = (int)max_index;
+    if (val_max[rr] < val_min_) // set a low threshold on dark columns
+      continue;
+
+    int j = row_max[rr] - 1, k = row_max[rr] + 1;
+    while (j >= 0        && im(rr, j--) > 0.8 * val_max[rr]);
+    while (k < im.cols() && im(rr, k++) > 0.8 * val_max[rr]);
+
+    double weighed_sum = 0., val_sum = 0.;
+
+    for (int cc = j + 1; cc < k; cc++)
+    {
+      weighed_sum += im(rr, cc) * (cc - j);
+      val_sum += im(rr, cc);
+    }
+
+    cv::Point2f laser_pt(float(weighed_sum / val_sum + j + laser_ROI_.x),
+                         float(rr + laser_ROI_.y));
+    CoM_pts.push_back(laser_pt);
+  }
+
+  return !CoM_pts.empty();
+}
+
 void LaserStripeDetector::rejectOutliers(const std::vector<cv::Point2f> &pts_in,
                                          std::vector<cv::Point2f> &pts_out)
 {
@@ -169,7 +209,7 @@ void LaserStripeDetector::rejectOutliers(const std::vector<cv::Point2f> &pts_in,
   {
     size_t j = i;
     while (i != pts_in.size()
-    && fabs(pts_in[i + 1].x - pts_in[i].x) < 2
+    && fabs(pts_in[i + 1].x - pts_in[i].x) < 3
     && fabs(pts_in[i + 1].y - pts_in[i].y) < 3)
       i++;
 
@@ -234,6 +274,12 @@ LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
                                const cv::Mat &im_v,
                                const std::vector<cv::Point2f> &laser_pixels) const
 {
+  // get hsv mask and im_v in original sized image
+  cv::Mat hsv_mask_large(height_, width_, CV_8UC1, 0.0);
+  cv::Mat im_v_large(height_, width_, CV_8UC1, 0.0);
+  hsv_mask.copyTo(hsv_mask_large(laser_ROI_));
+  im_v.copyTo(im_v_large(laser_ROI_));
+
   // compose original image with colored masks
   cv::Mat im_black(height_, width_, CV_8UC1, 0.0);
 
@@ -241,7 +287,7 @@ LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
   cv::Mat hsv_mask_green, mask_color, im_mask;
 
   v_hsv_mask_green.push_back(im_black);
-  v_hsv_mask_green.push_back(hsv_mask);
+  v_hsv_mask_green.push_back(hsv_mask_large);
   v_hsv_mask_green.push_back(im_black);
   cv::merge(v_hsv_mask_green, hsv_mask_green);
 
@@ -256,7 +302,7 @@ LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
   cv::merge(v_fisheye_mask_blue, fisheye_mask_blue);
   mask_color = hsv_mask_green + fisheye_mask_blue;
   */
-
+  mask_color = hsv_mask_green;
   cv::addWeighted(im_ori, 0.8, mask_color, 0.2, 0.0, im_mask);
 
   // draw image with laser points
@@ -268,7 +314,7 @@ LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
   // concat four visualization images
   cv::Mat im_hconcat1, im_hconcat2, im_concat;
   cv::Mat im_v_C3;
-  std::vector<cv::Mat> v_im_v_C3{im_v, im_v, im_v};
+  std::vector<cv::Mat> v_im_v_C3{im_v_large, im_v_large, im_v_large};
   cv::merge(v_im_v_C3, im_v_C3);
   cv::hconcat(im_ori , im_mask , im_hconcat1);
   cv::hconcat(im_v_C3, im_laser, im_hconcat2);
@@ -289,6 +335,6 @@ LaserStripeDetector::visualize(const cv::Mat &im_ori, const cv::Mat &hsv_mask,
               cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
 
   cv::imshow("laser detection visualization", im_concat);
-  cv::waitKey(50);
+  cv::waitKey(10000);
   //cv::imwrite("/home/dcheng/tmp/laser_ring_detect_vis.png", im_concat);
 }

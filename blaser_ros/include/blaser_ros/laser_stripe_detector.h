@@ -98,6 +98,16 @@ private:
    */
   bool findCoMColumn(Eigen::MatrixXd &im, std::vector<cv::Point2f> &CoM_pts);
 
+  /**
+   * Find the Center of Mass of a high-valued window on each row of the
+   * given image. If there does not exist any pixel with a high value (>= 10)
+   * on a column, then this column is discarded.
+   * @param im
+   * @param CoM_pts
+   * @return false if no points are selected.
+   */
+  bool findCoMRow(Eigen::MatrixXd &im, std::vector<cv::Point2f> &CoM_pts);
+
   // functions to load config yaml files
   void loadEnvConfig(const std::string&  env_config_fn);
   void loadCamConfig(const std::string&  cam_config_fn);
@@ -157,6 +167,7 @@ private:
 
   // control parameters
   bool f_vis_;
+  bool find_laser_per_column;
 };
 
 #endif //VIO_BLASER_LASER_STRIPE_DETECTOR_H

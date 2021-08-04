@@ -39,7 +39,7 @@ camera-laser extrinsics.
 #### Camera intrinsics
 
 **First collect images observing a checkerboard from various angles.**
-It is a good idea to use ROS tool **camera_calibration** to collect images, eg.
+It is a good idea to use ROS tool **camera_calibration** to collect images, e.g.
 
 `rosrun camera_calibration cameracalibrator.py --size 10x7 --square 0.005 image:
 =/image_topic'

@@ -12,9 +12,8 @@
 #include <memory>
 #include <blaser_ros/laser_geometry_utils.h>
 
-LaserDetector::LaserDetector(std::string &config_fn, const std::string &nh_name,
-                             std::string ns)
-    : lsd_(config_fn, ns), laser_plane_(4), nh_(nh_name), laser_depth_range_(2)
+LaserDetector::LaserDetector(std::string &config_fn, const std::string &nh_name)
+    : lsd_(config_fn), laser_plane_(4), nh_(nh_name), laser_depth_range_(2)
 {
   readParams(config_fn);
   laser_lift_ = std::make_shared<Laser2Dto3D>(laser_plane_);
@@ -104,7 +103,7 @@ void
 LaserDetector::laser_extract_param_cb(blaser_ros::LaserDetectorConfig &config,
                                       uint32_t level)
 {
-  lsd_.setLaserExtractParams(config.brightness_thresh,
-                             config.hue_thresh_1,
-                             config.hue_thresh_2);
+  lsd_.setLaserExtractParams(config.brightness_min,
+                             config.hue_min,
+                             config.hue_max);
 }

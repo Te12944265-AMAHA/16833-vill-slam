@@ -140,7 +140,7 @@ bool LaserCalibCB::solveLaserPlane(Eigen::Vector4d &plane_param)
 
   // save plane parameters and laser point positions
   std::ofstream calib_out_file;
-  calib_out_file.open("calib_result.txt");
+  calib_out_file.open(output_fn_);
   calib_out_file
       << "laser plane parameters (ax + by + cx + d = 0):" << endl
       << plane_param(0) << "," << plane_param(1) << ","
@@ -645,7 +645,7 @@ LaserCalibCB::solveLaserParams(const Eigen::Vector4d& plane_param,
 
   // 6. write result
   std::ofstream calib_out_file;
-  calib_out_file.open("calib_result.txt", std::ios_base::app);
+  calib_out_file.open(output_fn_, std::ios_base::app);
   calib_out_file << "Rotation from laser to camera:" << endl
       << Rcl << endl
       << "translation from laser to camera:" << endl
