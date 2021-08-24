@@ -113,7 +113,7 @@ void LaserFrame::preproc(LaserPointCloudConstPtr pc_in, LaserPointCloudPtr pc_ou
       Vector3d dist(pc_in->points[i + 1].x - pc_in->points[j].x,
                     pc_in->points[i + 1].y - pc_in->points[j].y,
                     pc_in->points[i + 1].z - pc_in->points[j].z);
-      if (dist.squaredNorm() > 1e-6 || i >= pc_in->size() - 1)// 1mm
+      if (dist.squaredNorm() > 4e-8 || i >= pc_in->size() - 1)// 0.3mm
         break;
       i++;
     }

@@ -155,8 +155,8 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
     //        window size of each level of pyramid, max level
     cv::calcOpticalFlowPyrLK(cur_img, forw_img, cur_pts, forw_pts, status, err,
                              cv::Size(11, 11), 5);
-    cout << "Match after KLT\n";
-    countDistantPairs(cur_pts, forw_pts);
+    //cout << "Match after KLT\n";
+    //countDistantPairs(cur_pts, forw_pts);
 
     // keep points within border (border width is set to 1)
     for (int i = 0; i < int(forw_pts.size()); i++)
@@ -169,8 +169,8 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
     reduceVector(cur_un_pts, status);
     reduceVector(track_cnt, status);
     ROS_DEBUG("temporal optical flow costs: %fms", t_o.toc());
-    cout << "Match after Reduce\n";
-    countDistantPairs(cur_pts, forw_pts);
+    //cout << "Match after Reduce\n";
+    //countDistantPairs(cur_pts, forw_pts);
   }
 
   for (auto &n : track_cnt)
@@ -179,8 +179,8 @@ void FeatureTracker::readImage(const cv::Mat &_img, double _cur_time)
   if (PUB_THIS_FRAME)
   {
     rejectWithF();
-    cout << "Match after rejectF\n";
-    countDistantPairs(cur_pts, forw_pts);
+    //cout << "Match after rejectF\n";
+    //countDistantPairs(cur_pts, forw_pts);
     ROS_DEBUG("set mask begins");
     TicToc t_m;
     // set mask to apply fish eye mask and exclude existing corners' region

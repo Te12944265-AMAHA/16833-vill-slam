@@ -114,7 +114,7 @@ bool LaserManager::findLaserPointsInFrame2D(const Vector2d &uv, double radius,
     double dist = sqr_dist * sqr_dist;
     min_dist = dist < min_dist ? dist : min_dist;
   }
-
+  cout << "Got 2d feature-laser match on " << uv.transpose() << endl;
   // todo check the searched points' uv, see if is searching pixel location
 }
 
@@ -492,7 +492,7 @@ double LaserManager::getPtDepthKDTree2D(KDTreeLaser2DConstPtr p_kdtree,
   Vector3d intersect = feature_ray.intersectionPoint(laser_plane);
 
   // visualize
-  if (true) // todo change back to false
+  if (false) 
   {
     sensor_msgs::PointCloud lpc_c_msg;
     sensor_msgs::PointCloud2 lpc_cn_msg;
@@ -558,22 +558,22 @@ double LaserManager::getPtDepthKDTree2D(KDTreeLaser2DConstPtr p_kdtree,
     return -2.0;
   }
 
-  /*
-  if (fabs(norm_vec(2)) < 0.6)
+  if (sensor_type == BLASER)
   {
-    cout << "reject laser pcd: normal not facing camera origin " << norm_vec.transpose() << endl;
-    return -3.0;
-  }
-   */
+    if (fabs(norm_vec(2)) < 0.6)
+    {
+      cout << "reject laser pcd: normal not facing camera origin "
+           << norm_vec.transpose() << endl;
+      return -3.0;
+    }
 
-  /*
-  if ((intersect - centroid).squaredNorm() > 2e-6)
-  {
-    cout << "reject laser pcd: feature not sit in the center of pcd "
-         << (intersect - centroid).squaredNorm() << endl;
-    return -4.0;
+    if ((intersect - centroid).squaredNorm() > 2e-6)
+    {
+      cout << "reject laser pcd: feature not sit in the center of pcd "
+           << (intersect - centroid).squaredNorm() << endl;
+      return -4.0;
+    }
   }
-   */
 
   return intersect(2);
 }

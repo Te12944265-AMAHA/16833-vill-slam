@@ -2115,6 +2115,7 @@ Estimator::findFeatureOnLaser(const ImageType &image, LaserFrameConstPtr &plf,
   std::vector<cv::KeyPoint> keypoints;
   std::vector<int> feature_idx;
 
+  cout << "Find feature near laser on image ";
   for (auto &id_pts : image)
   {
     int feature_id = id_pts.first;
@@ -2135,8 +2136,9 @@ Estimator::findFeatureOnLaser(const ImageType &image, LaserFrameConstPtr &plf,
       Vector2d uv(id_pts.second[0].second(3), id_pts.second[0].second(4));
       Vector2d vel(id_pts.second[0].second(5), id_pts.second[0].second(6));
       Vector2d uv_est = uv + vel * dt_laser_im; // velocity-corrected uv
+      cout << uv_est.transpose() << ", ";
 
-      l_manager.findLaserPointsInFrame2D(uv_est, 25, plf, laser_pts, min_dist);
+      l_manager.findLaserPointsInFrame2D(uv_est, 50, plf, laser_pts, min_dist);
 
       // more than 3 laser points near visual feature
       if (laser_pts.size() > 3 && min_dist < it->laser_uv_min_dist)

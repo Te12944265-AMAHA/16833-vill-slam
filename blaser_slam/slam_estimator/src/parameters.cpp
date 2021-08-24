@@ -30,6 +30,7 @@ double IM_INTERVAL;
 double CAM_VIS_SCALE;
 double CAM_VIS_LINE_WIDTH;
 bool USE_ENCODER;
+SENSOR_TYPE sensor_type;
 
 bool res_stat_count_jacobian = true;
 
@@ -60,6 +61,10 @@ void readParameters(ros::NodeHandle &n)
   {
     std::cerr << "ERROR: Wrong path to settings" << std::endl;
   }
+
+  int _sensor_type;
+  fsSettings["sensor_type"] >> _sensor_type;
+  sensor_type = static_cast<SENSOR_TYPE>(_sensor_type);
 
   fsSettings["imu_topic"] >> IMU_TOPIC;
   fsSettings["laser_topic"] >> LASER_TOPIC;

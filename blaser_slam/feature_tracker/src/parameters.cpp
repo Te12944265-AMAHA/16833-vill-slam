@@ -44,6 +44,10 @@ void readParameters(ros::NodeHandle &n)
     {
         std::cerr << "ERROR: Wrong path to settings" << std::endl;
     }
+
+    bool is_blaser;
+
+
     std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
 
     fsSettings["image_visual_topic"] >> IMAGE_TOPIC;

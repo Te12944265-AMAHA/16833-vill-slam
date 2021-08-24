@@ -88,6 +88,14 @@ enum SIZE_PARAMETERIZATION
     SIZE_FEATURE = 1
 };
 
+enum SENSOR_TYPE
+{
+  BLASER,
+  PIPEBLASER,
+};
+
+extern SENSOR_TYPE sensor_type;
+
 enum StateOrder
 {
     O_P = 0,

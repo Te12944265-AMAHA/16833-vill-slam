@@ -95,7 +95,7 @@ A few tips:
 * **Kalibr**'s wiki has some great tutorials on IMU modeling.
 
 The calibration may take a long time. After it finishes, examine the rotation
-and translation result. You should have a pretty good guess by the mechanical
+and translation result. You should have a pretty good guess from the mechanical
 design CAD file or by just looking at the sensor.
 
 #### Camera-laser extrinsics
