@@ -3,7 +3,11 @@
 #include <opencv2/features2d/features2d.hpp>
 
 Estimator::Estimator()
-    : f_manager{Rs, Ps}, kf_cnt_(0), mapping_status(0), enable_window2map(false), is_frame_to_map_(false)
+: f_manager{Rs, Ps}
+, kf_cnt_(0)
+, mapping_status(0)
+, enable_window2map(false)
+, is_frame_to_map_(false)
 {
   ROS_INFO("init begins");
   clearState();

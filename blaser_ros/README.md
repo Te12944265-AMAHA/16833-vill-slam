@@ -258,3 +258,18 @@ To perform the sensitivity analysis, run
 
 A sample sensitivty_analysis_yaml_file can be found at 
 `blaser_ros/config/resolution_analyser/resolution_analyser.yaml`.
+
+## Using ROS Bag with Blaser
+
+If you want to record sensor data and run SLAM with recorded data offline, use
+compressed image topics instead of raw image topics. This can save you GBs of
+storage space. Here's what I typically do:
+
+1. Record: record raw sensor data only, including raw imu data and compressed
+image topics. The compressed image topics are already published by the driver.  
+`rosbag record /imu /blaser_camera/image_hexp/compressed /blaser_camera/image_lexp/compressed`
+2. Replay: since the image topics are compressed, you need to *republish* the
+image topics. This is implemented in the `sensor_proc.launch` file using the
+`republish_compressed_image` argument, whose default value is 0. Use the
+following command when using rosbags.  
+`roslaunch blaser_ros xx_sensor_proc.launch republish_compressed_image:=1`
