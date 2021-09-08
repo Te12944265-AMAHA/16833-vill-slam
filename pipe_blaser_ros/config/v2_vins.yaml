@@ -1,4 +1,5 @@
 %YAML:1.0
+sensor_type: 1 # 0 for blaser, 1 for pipeblaser
 
 #common parameters
 imu_topic: "/cx5/imu/data"
