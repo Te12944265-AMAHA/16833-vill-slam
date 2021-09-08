@@ -11,10 +11,92 @@ This ROS package contains software for hand-held Blaser, including
 The library `camera_model` (forked from **camodocal**) is used extensively in this
 package.
 
-There are two main work flows:
+This tutorial contains three sections
 
+0. Installing dependencies and Blaser software
 1. Running SLAM (involves calibration & running triangulation)
 2. Performing sensitivity evaluation
+
+## 0. Installation
+This section is about how to set up Blaser software on a new computer.
+
+### 0.0 Environment
+Blaser uses Ubuntu 18.04 and ROS Melodic ([Installation](http://wiki.ros.org/melodic/Installation/Ubuntu)).
+
+### 0.1 Install Dependencies
+
+1. First make a directory for all Blaser dependencies
+```shell
+mkdir ~/blaser_dependencies
+```
+
+2. Install [Matio](https://github.com/tbeu/matio)
+```shell
+cd ~/blaser_dependencies
+git clone git://git.code.sf.net/p/matio/matio
+cd matio
+./autogen.sh
+./configure
+make
+sudo make install
+```
+3. Install [Ceres Solver](http://ceres-solver.org/installation.html)
+```shell
+cd ~/blaser_dependencies
+wget http://ceres-solver.org/ceres-solver-1.14.0.tar.gz
+sudo apt-get install libgoogle-glog-dev libgflags-dev libatlas-base-dev libsuitesparse-dev
+tar zxf ceres-solver-1.14.0.tar.gz
+mkdir ceres-bin
+cd ceres-bin
+cmake ../ceres-solver-1.14.0
+make -j8
+sudo make install
+```
+4. Install [XIMEA Linux Software packge](https://www.ximea.com/support/wiki/apis/XIMEA_Linux_Software_Package)
+```shell
+cd ~/blaser_dependencies
+wget https://www.ximea.com/downloads/recent/XIMEA_Linux_SP.tgz
+tar xzf XIMEA_Linux_SP.tgz
+mv package ximea_linux_sp
+cd ximea_linux_sp
+sudo ./install
+```
+5. Python libraries
+```sh
+sudo apt-get install python-matplotlib python-numpy
+```
+6. Enable high speed USB and USB permission
+```shell
+sudo adduser $USER dialout
+# if file /etc/rc.local already exists
+echo 'echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb' | sudo tee -a /etc/rc.local
+# if file /etc/rc.local does not exist 
+printf '%s\n' '#!/bin/bash' 'echo 0 > /sys/module/usbcore/parameters/usbfs_memory_mb' | sudo tee /etc/rc.local; sudo chmod +x /etc/rc.local
+# reboot for the changes to take effect
+```
+
+### 0.2 Install Blaser software
+1. Create a catkin workspace for blaser:
+```sh
+mkdir -p ~/blaser_ws/src && cd ~/blaser_ws/src
+```
+2. Then clone the repo `blaser_mapping`:
+```sh
+git clone https://github.com/biorobotics/blaser_mapping.git
+```
+3. Clone the Blaser driver called `blaser-pcl-core` located in another Git repo.
+```sh
+git clone https://github.com/biorobotics/blaser-pcl-core.git
+```
+4. build
+```shell
+cd ~/blaser_ws/
+catkin_make
+```
+
+## Run Blaser
+Now you can run Blaser following [this tutorial](https://github.com/biorobotics/blaser_mapping/blob/master/blaser_ros/README.md).\
+If the Blaser is already calibrated, you can skip Step 1.2 Sensor Calibration in the linked tutorial.
 
 ## 1. Running SLAM
 

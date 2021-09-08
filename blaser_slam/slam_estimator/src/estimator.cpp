@@ -3,11 +3,7 @@
 #include <opencv2/features2d/features2d.hpp>
 
 Estimator::Estimator()
-: f_manager{Rs, Ps}
-, kf_cnt_(0)
-, mapping_status(0)
-, enable_window2map(false)
-, is_frame_to_map_(false)
+: f_manager{Rs, Ps}, kf_cnt_(0), mapping_status(0), enable_window2map(false), is_frame_to_map_(false)
 {
   ROS_INFO("init begins");
   clearState();
@@ -149,9 +145,9 @@ void Estimator::processImage(
   ROS_DEBUG("new image coming ------------------------------------------");
   ROS_DEBUG("Adding feature points %lu", image.size());
   if (f_manager.addFeatureCheckParallax(frame_count, image, td, header.seq))
-    marginalization_flag = MARGIN_OLD;
+    marginalization_flag = MARGIN_OLD; // is keyframe
   else
-    marginalization_flag = MARGIN_SECOND_NEW;
+    marginalization_flag = MARGIN_SECOND_NEW; // is not keyframe
 
   ROS_DEBUG("this frame is--------------------%s",
             marginalization_flag ? "reject" : "accept");
