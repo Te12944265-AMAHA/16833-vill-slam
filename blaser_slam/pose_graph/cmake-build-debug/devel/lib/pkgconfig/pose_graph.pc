@@ -1,0 +1,8 @@
+prefix=/home/dcheng/catkin_ws/blaser_ws/src/vins_refactor/pose_graph/cmake-build-debug/devel
+
+Name: pose_graph
+Description: Description of pose_graph
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

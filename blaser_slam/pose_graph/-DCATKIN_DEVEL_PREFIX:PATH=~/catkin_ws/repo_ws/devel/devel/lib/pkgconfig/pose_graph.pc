@@ -1,0 +1,8 @@
+prefix=/home/dcheng/catkin_ws/blaser_ws/src/VINS-Mono/pose_graph/-DCATKIN_DEVEL_PREFIX:PATH=~/catkin_ws/repo_ws/devel/devel
+
+Name: pose_graph
+Description: Description of pose_graph
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/dcheng/catkin_ws/blaser_ws/src/VINS-Mono/pose_graph/-DCATKIN_DEVEL_PREFIX:PATH=~/catkin_ws/repo_ws/devel/devel/lib 
+Requires: 
