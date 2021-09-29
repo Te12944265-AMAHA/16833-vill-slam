@@ -17,6 +17,8 @@ sensor is created for in-pipe mapping for 12-inch diameter natural gas pipes.
 
 This Git repository is organized as follows.
 
+0. Installation ReadMe guidebook: [blaser_mapping/blaser_ros](https://github.com/biorobotics/blaser_mapping/blob/master/blaser_ros/README.md).
+
 1. `blaser_slam` contains the SLAM software. It has a `feature_tracker` as
    visual front-end and a `slam_estimator` for factor graph backend. This SLAM
    software is a stand-alone tool and do not require any modification for
