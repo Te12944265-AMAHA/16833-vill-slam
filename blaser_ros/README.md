@@ -91,9 +91,30 @@ git clone https://github.com/biorobotics/blaser-pcl-core.git
 4. build
 ```shell
 cd ~/blaser_ws/
-catkin_make
+catkin_make -j1 
 ```
+The compilation will take some time. Please wait. 
 
+Once the compilation is done, you would be required to add a line to `~/.bashrc` file. 
+Open the the bashrc file by running the following command in a terminal.
+
+`gedit ~/.bashrc`
+
+This will open the text editor and add the following line at the end of the file. 
+
+ ```
+ source ~/blaser_ws/devel/setup.bash
+ ```
+ 
+ Save and close the text editor and run `source ~/.bashrc` for the changes to take effect. 
+ 
+ You can test your installation by running 
+ 
+ ```
+ roscd blaser_ros
+ ```
+ Upon running the above commnand, your current directory should change to  - `~/blaser_ws` .
+ 
 ## Run Blaser
 Now you can run Blaser following [this tutorial](https://github.com/biorobotics/blaser_mapping/blob/master/blaser_ros/README.md).\
 If the Blaser is already calibrated, you can skip Step 1.2 Sensor Calibration in the linked tutorial.
