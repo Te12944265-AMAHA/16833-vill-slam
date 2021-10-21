@@ -567,10 +567,6 @@ bool LaserFeatureMap::addLaserFrameSize(int size)
 {
   // reserve size
   //new_laser_frame_->reserve(size);
-  if(laser_pcd_->size() + size > laser_pcd_->points.max_size()){
-      ROS_WARN("TRYING TO ALLOCATE MORE THAN MAX SIZE, RETURNING FALSE");
-      return false;
-  }
   laser_pcd_->reserve(laser_pcd_->size() + size);
   return true;
 }
