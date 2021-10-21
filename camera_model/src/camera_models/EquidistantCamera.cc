@@ -11,6 +11,8 @@
 
 #include "camodocal/gpl/gpl.h"
 
+#include <immintrin.h>
+
 namespace camodocal
 {
 
@@ -434,7 +436,7 @@ EquidistantCamera::liftProjective(const Eigen::Vector2d& p, Eigen::Vector3d& P) 
 
     // Obtain a projective ray
     double theta, phi;
-    backprojectSymmetric(p_u, theta, phi);
+    backprojectSymmetric(p_u, &theta, phi);
 
     P(0) = sin(theta) * cos(phi);
     P(1) = sin(theta) * sin(phi);
@@ -525,7 +527,7 @@ EquidistantCamera::initUndistortMap(cv::Mat& map1, cv::Mat& map2, double fScale)
             double my_u = m_inv_K22 / fScale * v + m_inv_K23 / fScale;
 
             double theta, phi;
-            backprojectSymmetric(Eigen::Vector2d(mx_u, my_u), theta, phi);
+            backprojectSymmetric(Eigen::Vector2d(mx_u, my_u), &theta, phi);
 
             Eigen::Vector3d P;
             P << sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta);
@@ -714,7 +716,7 @@ EquidistantCamera::fitOddPoly(const std::vector<double>& x, const std::vector<do
 
 void
 EquidistantCamera::backprojectSymmetric(const Eigen::Vector2d& p_u,
-                                        double& theta, double& phi) const
+                                        double* theta, double& phi) const
 {
     double tol = 1e-10;
     double p_u_norm = p_u.norm();
@@ -770,7 +772,7 @@ EquidistantCamera::backprojectSymmetric(const Eigen::Vector2d& p_u,
 
     if (npow == 1)
     {
-        theta = p_u_norm;
+        *theta = p_u_norm;
     }
     else
     {
@@ -785,6 +787,8 @@ EquidistantCamera::backprojectSymmetric(const Eigen::Vector2d& p_u,
         Eigen::MatrixXcd eigval = es.eigenvalues();
 
         std::vector<double> thetas;
+
+#pragma unroll
         for (int i = 0; i < eigval.rows(); ++i)
         {
             if (fabs(eigval(i).imag()) > tol)
@@ -808,13 +812,128 @@ EquidistantCamera::backprojectSymmetric(const Eigen::Vector2d& p_u,
 
         if (thetas.empty())
         {
-            theta = p_u_norm;
+            *theta = p_u_norm;
         }
         else
         {
-            theta = *std::min_element(thetas.begin(), thetas.end());
+            *theta = *std::min_element(thetas.begin(), thetas.end());
         }
+
+#pragma unroll
+
+        for(int i=0; i<eigval.rows(); ++i){
+            auto checkOne = fabs(eigval(i).imag()) > tol;
+            auto t = eigval(i).real();
+            auto checkTwo = t <  - tol;
+
+            if(checkOne || checkTwo)
+                continue;
+
+            auto sign = (int32_t(t)>>31) + 1.0;
+            thetas.push_back(sign * t);
+        }
+
+        if(thetas.empty())
+            *theta = p_u_norm;
+
+        else{
+
+            auto size = thetas.size();
+
+#if defined(__AVX2__)
+
+            int isDivisible = size % 4 == 0;
+
+            switch (isDivisible) {
+                case 1: {
+                    __m128d *simdThetas = (__m128d *) thetas.data();
+                    __m128d minVal = _mm_set1_pd(std::numeric_limits<double>::max());
+
+                    for (int i = 0; i < size / 4; i++)
+                        minVal = _mm_min_pd(minVal, simdThetas[i]);
+
+                    for (int i = 0; i < 3; i++)
+                        minVal = _mm_min_pd(minVal, _mm_shuffle_ps(minVal, minVal, 0x93));
+
+                    _mm_store_sd(theta, minVal);
+                    break;
+                }
+
+                case  0 :{
+
+                    auto quotient = size / 4;
+
+                    __m128d *simdThetas = (__m128d *) thetas.data();
+                    __m128d minVal = _mm_set1_pd(std::numeric_limits<double>::max());
+
+                    for (int i = 0; i < size / 4; i++)
+                        minVal = _mm_min_pd(minVal, simdThetas[i]);
+
+                    for (int i = 0; i < 3; i++)
+                        minVal = _mm_min_pd(minVal, _mm_shuffle_ps(minVal, minVal, 0x93));
+
+                    _mm_store_sd(theta, minVal);
+
+                    for(size_t i = quotient * 4  + 1; i < size; i++){
+                        double value = thetas.at(i);
+                        if(*theta > value)
+                            *theta = value;
+                    }
+
+                    break;
+
+                }
+            }
+#else
+            int isDivisible = size % 4 == 0;
+
+            switch (isDivisible) {
+                case 1: {
+                    __m128d *simdThetas = (__m128d *) thetas.data();
+                    __m128d minVal = _mm_set1_pd(std::numeric_limits<double>::max());
+
+                    for (int i = 0; i < size / 4; i++)
+                        minVal = _mm_min_pd(minVal, simdThetas[i]);
+
+                    for (int i = 0; i < 3; i++)
+                        minVal = _mm_min_pd(minVal, _mm_shuffle_ps(minVal, minVal, 0x93));
+
+                    _mm_store_sd(theta, minVal);
+                    break;
+                }
+
+                case  0 :{
+
+                    auto quotient = size / 4;
+
+                    __m128d *simdThetas = (__m128d *) thetas.data();
+                    __m128d minVal = _mm_set1_pd(std::numeric_limits<double>::max());
+
+                    for (int i = 0; i < size / 4; i++)
+                        minVal = _mm_min_pd(minVal, simdThetas[i]);
+
+                    for (int i = 0; i < 3; i++)
+                        minVal = _mm_min_pd(minVal, _mm_shuffle_ps(minVal, minVal, 0x93));
+
+                    _mm_store_sd(theta, minVal);
+
+                    for(size_t i = quotient * 4  + 1; i < size; i++){
+                        double value = thetas.at(i);
+                        if(*theta > value)
+                            *theta = value;
+                    }
+
+                    break;
+
+                }
+            }
+#endif
+        }
+
     }
+
+
+
 }
 
 }
