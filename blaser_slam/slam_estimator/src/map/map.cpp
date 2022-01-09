@@ -568,7 +568,6 @@ bool LaserFeatureMap::addLaserFrameSize(int size)
   // reserve size
   //new_laser_frame_->reserve(size);
   laser_pcd_->reserve(laser_pcd_->size() + size);
-
   return true;
 }
 
