@@ -1,0 +1,43 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/tina-laptop/localFiles/research/blaser/blaser_ws/devel/include/**",
+        "/home/tina-laptop/localFiles/research/lidar/lidar_ws/devel/include/**",
+        "/home/tina-laptop/Applications/ros_ws/devel/include/**",
+        "/home/tina-laptop/Downloads/ws_livox/devel/include/**",
+        "/home/tina-laptop/catkin_ws/devel/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/devel/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/beginner_tutorials/include/**",
+        "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser-pcl-core/include/**",
+        "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/blaser_ros/include/**",
+        "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/camera_model/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/code_utils/include/**",
+        "/home/tina-laptop/Applications/ros_ws/src/Universal_Robots_ROS_Driver/controller_stopper/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/vision_opencv/cv_bridge/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/cv_camera/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/vision_opencv/image_geometry/include/**",
+        "/home/tina-laptop/localFiles/research/lidar/lidar_ws/src/lidar_error_modeling/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/mocap/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/monocular_sfm/include/**",
+        "/home/tina-laptop/catkin_ws/src/moveit_visual_tools/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/nbv_mapping/include/**",
+        "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/pipe_blaser_ros/include/**",
+        "/home/tina-laptop/catkin_ws/src/realsense-ros/realsense2_camera/include/**",
+        "/home/tina-laptop/Applications/ros_ws/src/Universal_Robots_ROS_Driver/ur_calibration/include/**",
+        "/home/tina-laptop/Applications/ros_ws/src/Universal_Robots_ROS_Driver/ur_controllers/include/**",
+        "/home/tina-laptop/Applications/ros_ws/src/fmauch_universal_robot/ur_kinematics/include/**",
+        "/home/tina-laptop/Applications/ros_ws/src/Universal_Robots_ROS_Driver/ur_robot_driver/include/**",
+        "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/src/vrep_plugin/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

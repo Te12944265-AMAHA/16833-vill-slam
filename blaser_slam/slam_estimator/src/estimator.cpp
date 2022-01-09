@@ -2176,6 +2176,7 @@ Estimator::findFeatureOnLaser(const ImageType &image, LaserFrameConstPtr &plf,
 
 bool Estimator::estFeatureLaserDepth(int frame_idx)
 {
+  ROS_DEBUG("estimating feature laser depth");
   // 1. initialize kd tree for frame_idx
   KDTreeLaser2DConstPtr kdtree_2d;
   LaserPointCloudConstPtr p_lpc_c;
@@ -2197,9 +2198,11 @@ bool Estimator::estFeatureLaserDepth(int frame_idx)
 
   for (auto &it_per_id : f_manager.feature)
   {
-    if (it_per_id.laser_start_frame != frame_idx)
+    if (it_per_id.laser_start_frame != frame_idx){
+      ROS_DEBUG("current frame is not laser start frame");
       continue;
-
+    }
+    ROS_DEBUG("current frame good");
     double laser_depth = l_manager.getPtDepthKDTree2D(
         kdtree_2d, p_lpc_c, it_per_id.laser_kf.point.head<2>());
 

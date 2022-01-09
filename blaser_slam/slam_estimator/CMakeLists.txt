@@ -28,7 +28,8 @@ find_package(OpenCV 3.2 REQUIRED)
 
 # message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
-find_package(Ceres REQUIRED)
+#find_package(Ceres REQUIRED)
+find_package(Ceres 1.14.0 EXACT REQUIRED)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3 REQUIRED)
@@ -43,6 +44,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${MATIO_INCLUDE_DIRS}
+  ${CERES_INCLUDE_DIRS}
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})

@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PythonLibs 2.7)
 

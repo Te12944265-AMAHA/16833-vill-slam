@@ -3,7 +3,6 @@ sensor_type: 1 # 0 for blaser, 1 for pipeblaser
 
 #common parameters
 imu_topic: "/imu"
-#imu_topic: "/cx5/imu/data"
 laser_topic: "/ring_laser_triangulator/laser_points"
 image_visual_topic: "/ximea/image_visual"
 image_profile_topic: "/ximea/image_profile"
@@ -44,8 +43,7 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.005, 0.005, -0.035]
-   #data: [-0.02767714,  0.0041511 , -0.01297651]
+   data: [-0.02767714,  0.0041511 , -0.01297651]
 
 
 #feature traker paprameters
@@ -109,8 +107,7 @@ center_v: 522.7624728277551
 
 # laser triangulation parameters
 #laser_plane: [0.328661, 0.573384, -100.0, 9.79346]
-#laser_plane: [0.554838, 0.50734, -100., 9.74935]
-laser_plane: [0.984891, 0.704338, -100.0, 9.562]
+laser_plane: [0.554838, 0.50734, -100., 9.74935]
 laser_distance_range: [0.01, 1.0] # distance between 3d point & camera
 
 # laser detection parameters
@@ -122,5 +119,5 @@ segment_length_thresh: 20
 
 v_thresh_ratio: 0.05
 #mask_file: "/home/pipe/catkin_ws/pipe_blaser_ws/src/pipe_blaser_ros/config/v2_mask.png"
-mask_file: "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_1014.png"
+mask_file: "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_160d.png"
 

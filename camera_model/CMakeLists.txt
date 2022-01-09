@@ -10,13 +10,15 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     )
 
-find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
+find_package(Boost 1.65.1 EXACT REQUIRED COMPONENTS filesystem program_options system)
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3 REQUIRED)
 
 # set(EIGEN_INCLUDE_DIR "/usr/local/include/eigen3")
-find_package(Ceres REQUIRED)
+# find_package(Ceres REQUIRED)
+#set(Ceres_DIR /usr/local/ceres-1.4)
+find_package(Ceres 1.14.0 EXACT REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
 
