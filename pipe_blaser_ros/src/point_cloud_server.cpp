@@ -49,7 +49,7 @@ void pointCloudPCLCallback(PointCloud pc) {
         buffer  << x << " " << y << " " << z << " " << (float)r << " " << (float)g << " "  << (float)b << ";";
     }
 
-    cout << "Sending point cloud..." << endl;
+    ROS_DEBUG("Sending point cloud...");
     if (clientSocket) {
         clientSocket->Send(buffer.str());
     }
@@ -59,28 +59,27 @@ void pointCloudPCLCallback(PointCloud pc) {
 void startServer() {
     // When a new client connected
     tcpServer.onNewConnection = [&](TCPSocket *newClient) {
-        cout << "New client: [";
-        cout << newClient->remoteAddress() << ":" << newClient->remotePort() << "]" << endl;
+        ROS_INFO_STREAM("New client: [" << newClient->remoteAddress() << ":" << newClient->remotePort() << "]");
         clientSocket = newClient;
     };
 
     // Bind the server to a port
     tcpServer.Bind(8888, [](int errorCode, string errorMessage) {
         // BINDING FAILED:
-        cout << errorCode << " : " << errorMessage << endl;
+        ROS_WARN_STREAM(errorCode << " : " << errorMessage);
     });
 
     // Start Listening the server
     tcpServer.Listen([](int errorCode, string errorMessage) {
         // LISTENING FAILED:
-        cout << errorCode << " : " << errorMessage << endl;
+        ROS_WARN_STREAM(errorCode << " : " << errorMessage);
     });
 }
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "point_cloud_server");
 
-    std::cout << "Point Cloud Server starting..." << std::endl;
+    ROS_INFO("Point Cloud Server starting...");
 
     ros::NodeHandle n;
 
