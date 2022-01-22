@@ -11,6 +11,9 @@
 #ifndef _LIDAR_H_
 #define _LIDAR_H_
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
 //define lidar parameter
 
 namespace lidar{

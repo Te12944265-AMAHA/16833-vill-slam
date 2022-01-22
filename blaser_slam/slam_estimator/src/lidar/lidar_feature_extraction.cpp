@@ -19,6 +19,7 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 LidarExtractor::LidarExtractor() {}
 
@@ -163,8 +164,8 @@ void LidarExtractor::featureExtractionFromSector(const pcl::PointCloud<pcl::Poin
 }
 
 int LidarExtractor::findCylinder(const LidarPointCloudPtr &pc_in,
-                                  LidarPointCloudPtr &pc_out,
-                                  std::vector<float> &cylinder_coeff)
+                                 LidarPointCloudPtr &pc_out,
+                                 std::vector<float> &cylinder_coeff)
 {
     // All the objects needed
     pcl::PassThrough<LidarPoint> pass;
@@ -228,7 +229,7 @@ int LidarExtractor::findCylinder(const LidarPointCloudPtr &pc_in,
     seg.setNormalDistanceWeight(0.1);
     seg.setMaxIterations(10000);
     seg.setDistanceThreshold(0.05);
-    seg.setRadiusLimits(0, 0.1);
+    seg.setRadiusLimits(0.1, 0.3);
     seg.setInputCloud(cloud_filtered2);
     seg.setInputNormals(cloud_normals2);
     // Obtain the cylinder inliers and coefficients
@@ -240,7 +241,7 @@ int LidarExtractor::findCylinder(const LidarPointCloudPtr &pc_in,
     extract.setNegative(false);
     pcl::PointCloud<LidarPoint>::Ptr cloud_cylinder(new pcl::PointCloud<LidarPoint>());
     extract.filter(*cloud_cylinder);
-    if (cloud_cylinder->points.empty()) 
+    if (cloud_cylinder->points.empty())
     {
         std::cerr << "Can't find the cylindrical component." << std::endl;
         return -1;
@@ -249,6 +250,7 @@ int LidarExtractor::findCylinder(const LidarPointCloudPtr &pc_in,
     {
         cylinder_coeff = coefficients_cylinder->values;
         std::cerr << "PointCloud representing the cylindrical component: " << cloud_cylinder->size() << " data points." << std::endl;
+        pc_out  = cloud_cylinder;
         return 0;
     }
 }

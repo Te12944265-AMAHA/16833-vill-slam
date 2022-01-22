@@ -121,3 +121,13 @@ add_executable(icp_underconstrain_test
   )
 target_link_libraries(icp_underconstrain_test
   ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${MATIO_LIBRARIES})
+
+
+add_executable(lidar_test
+  src/test/lidar_test.cpp
+  src/lidar/lidar.cpp 
+  src/lidar/lidar_feature_extraction.cpp 
+  src/lidar/lidar_frame.cpp 
+  src/lidar/lidar_manager.cpp
+  )
+target_link_libraries(lidar_test ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} ${PCL_VISUALIZATION_LIBRARIES})

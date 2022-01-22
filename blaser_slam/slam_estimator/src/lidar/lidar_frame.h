@@ -28,8 +28,10 @@ public:
                         double timestamp, size_t seq);
 
     double getTimestamp() const { return timestamp_; }
-    Eigen::Vector3d getAxis();
-    void setAxis(Eigen::Vector3d vec);
+    Eigen::Vector3f getAxis();
+    void setAxis(Eigen::Vector3f vec);
+
+    Eigen::Vector3f getAxisPoint();
 
     double getRadius() const { return radius; }
     void setRadius(double rad) { radius = rad; }
@@ -57,7 +59,7 @@ private:
     void preproc(LidarPointCloudConstPtr pc_in, LidarPointCloudPtr pc_out);
 
     // transformations
-    Eigen::Vector3d axis;
+    Eigen::Vector3f axis;
     double radius = 0;
 
     const double timestamp_;
@@ -65,7 +67,7 @@ private:
 
     const int point_filter_num = 2;
     const double min_dist = 0.2;
-    const double max_dist = 3;
+    const double max_dist = 1.5;
 };
 
 typedef std::shared_ptr<LidarFrame> LidarFramePtr;

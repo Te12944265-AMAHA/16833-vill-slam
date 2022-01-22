@@ -52,8 +52,7 @@ public:
     void addLidarFrame(LidarFrameConstPtr frame);
     void discardObsoleteReadings(double time);
 
-    int LidarManager::getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2,
-                                    Eigen::Quaterniond &dq, Eigen::Vector3d &dt);
+    int getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2, Eigen::Matrix4f &T);
     
     
 private:
@@ -61,7 +60,7 @@ private:
 
     std::string lidar_topic;
 
-    void LidarManager::findVectorRot(Eigen::Vector3d &vec1, Eigen::Vector3d &vec2, Eigen::Quaterniond &q_out);
+    void findVectorRot(Eigen::Vector3f &vec1, Eigen::Vector3f &vec2, Eigen::Quaternionf &q_out);
 
     void initialize_subscribers(); 
     void initialize_publishers();

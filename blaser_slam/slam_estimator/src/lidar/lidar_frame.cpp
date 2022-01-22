@@ -23,20 +23,24 @@ LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t s
     cylinder_extracted_ = lidar_extractor.findCylinder(pc_l_, pc_cylinder_, cylinder_coeff_);
 }
 
-Eigen::Vector3d LidarFrame::getAxis()
+Eigen::Vector3f LidarFrame::getAxis()
 {
     if (axis(0) == 0 && axis(1) == 0 && axis(2) == 0)
     {
-        Eigen::Vector3d res(cylinder_coeff_[3]-cylinder_coeff_[0], 
-                            cylinder_coeff_[4]-cylinder_coeff_[1], 
-                            cylinder_coeff_[5]-cylinder_coeff_[2]);
+        Eigen::Vector3f res(cylinder_coeff_[3], cylinder_coeff_[4], cylinder_coeff_[5]);
         return res;
     }
     else 
         return axis;
 }
 
-void LidarFrame::setAxis(Eigen::Vector3d vec)
+Eigen::Vector3f LidarFrame::getAxisPoint()
+{
+    Eigen::Vector3f res(cylinder_coeff_[0], cylinder_coeff_[1], cylinder_coeff_[2]);
+    return res;
+}
+
+void LidarFrame::setAxis(Eigen::Vector3f vec)
 {
     axis = vec;
 }
