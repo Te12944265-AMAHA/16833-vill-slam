@@ -23,5 +23,5 @@
     <!--node name="image_sharpen" pkg="pipe_blaser_ros" type="image_sharpen.py"/-->
   
     <!-- rviz -->
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find pipe_blaser_ros)/config/vlio_rviz_config.rviz"/>
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find pipe_blaser_ros)/config/vins_rviz_config.rviz"/>
 </launch>

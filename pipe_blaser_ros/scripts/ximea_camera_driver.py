@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from ximea import xiapi
 import cv2
 import rospy
@@ -10,7 +11,7 @@ from threading import Thread, Lock
 stamp_mutex = Lock()
 stamp_buffer = []
 
-port = '/dev/ttyACM1'
+port = '/dev/ttyACM0'
 
 class Camera:
     def __init__(self):
@@ -74,7 +75,11 @@ class SerialHandler:
         self.ser = serial.Serial(port, 57600, timeout=1)
         self.ser.flush()
         self.stamp_counter = 0
+        # keep sending start until teensy replies
+        print("Trying to connect with teensy")
+        #while self.readData() == False:
         self.ser.write("start".encode())
+            #time.sleep(0.05)
         self.time_offset = 0
         print("Serial ready!")
 
@@ -104,12 +109,18 @@ class SerialHandler:
             pass
         elif msg[0] == 'pps':
             pass
+        elif msg[0] == 'connected':
+            print('Serial connected')
         else:
             print("Serial message " + msg[0] + " not recognized")
+        return True
 
     def close(self):
         print("Stopping MCU work!")
+        t_stop = time.time()
         self.ser.write("stop".encode())
+        while not rospy.is_shutdown() and time.time()-t_stop < 3:
+            serial_handler.readData()
         self.ser.close()
 
 

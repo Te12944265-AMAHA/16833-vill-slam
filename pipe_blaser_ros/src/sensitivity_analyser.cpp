@@ -66,22 +66,21 @@ void SensitivityAnalyser::evalSensitivity()
     p.push_back(p_row);
   }
 
-
+  /*
   plt::plot_surface(d, b, s);
   plt::xlabel("Diameter (m)");
   plt::ylabel("Baseline (m)");
   plt::set_zlabel("Sensitivity (pixel/mm)");
   plt::title("Sensitivity vs diameter & baseline");
   plt::show();
+  */
 
-/*
   plt::plot_surface(d, b, p);
   plt::xlabel("Diameter (m)");
   plt::ylabel("Baseline (m)");
   plt::set_zlabel("Precision (mm)");
   plt::title("Precision vs diameter & baseline");
   plt::show();
-   */
 }
 
 void SensitivityAnalyser::evalSensitivityAtDiameter(double diameter,
@@ -115,7 +114,7 @@ void SensitivityAnalyser::evalSensitivityAtDiameter(double diameter,
                 << " inch), the best baseline length is " << max_baseline
                 << " m with sensitivity = " << max_sensitivity
                 << " pixel/mm." << endl;
-  cout << output_stream.str();
+  //cout << output_stream.str();
 
   /*
   plt::plot(baselines, sensitivities);
@@ -141,17 +140,25 @@ SensitivityAnalyser::evalSensitivityAtDiameters(std::vector<double> diameters)
     sensitivity2precision(sensitivities, precisions);
 
     std::stringstream str_stream;
-    str_stream << std::setprecision(2) << diameter
-               << "m (" << diameter / 2.54 * 100 << " inch)";
+    str_stream << std::setprecision(2) << "Diameter = " << diameter
+               << "m"; //<< diameter / 2.54 * 100 << " inch)";
+    cout << "size 1: " << sensitivities.size() << endl;
+    // cout << "size 2: " << sensitivities[0].size() << endl;
+    // cout << sensitivities[1] << endl;
+    for (int i = 0; i < sensitivities.size(); i++)
+    {
+     sensitivities[i] = 1/sensitivities[i];
+
+    }
 
     plt::named_plot(str_stream.str(), baselines, sensitivities);
     //plt::named_plot(str_stream.str(), baselines, precisions);
 
   }
 
-  plt::title("Sensitivity vs baseline with various diameters");
+  plt::title("Accuracy vs baseline with various diameters (old configeration)");
   plt::xlabel("Baseline (m)");
-  plt::ylabel("Sensitivity (pixel/mm)");
+  plt::ylabel("Accuracy (mm/pixel)");
   plt::legend();
   plt::show();
 
@@ -280,9 +287,10 @@ int main(int argc, char **argv)
 
   analyser.evalSensitivityAtDiameters(pipe_diameters);
 
-  std::vector<double> baselines{0.05, 0.1, 0.15, 0.2};
+  //std::vector<double> baselines{0.05, 0.1, 0.15, 0.2};
+  std::vector<double> diameters{0.1524, 0.2333, 0.3167, 0.4};
 
-  analyser.evalSensitivityAtBaselines(baselines);
+  analyser.evalSensitivityAtBaselines(diameters);
 
   return 0;
 }

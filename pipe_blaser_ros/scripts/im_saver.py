@@ -11,7 +11,10 @@ def image_cb(data):
     cv2.imshow('blaser image', img)
     cmd = cv2.waitKey(32)
     # save image if pressed 's' or space key
-    if cmd == ord('s') or cmd == 32:
+    if cmd != 255:
+        print("received key: {}".format(cmd))
+        print("s should be key #".format(ord('s')))
+    elif cmd == ord('s') or cmd == 32:
         print("Saved image no. %03d!" % image_cnt)
         cv2.imwrite('img'+('%03d' % image_cnt)+'.png', img)
         image_cnt += 1
