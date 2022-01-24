@@ -85,6 +85,7 @@ add_executable(fisheye_mask_generator
   src/fisheye_mask_generator.cpp)
 target_link_libraries(fisheye_mask_generator ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+# A server that sends point cloud data to AR devices
 add_executable(point_cloud_server
         src/point_cloud_server.cpp)
 target_link_libraries(point_cloud_server ${catkin_LIBRARIES} ${PYTHON_LIBRARIES})

@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 
-#include <third_party/async-sockets/tcpserver.hpp>
+#include <third_party/async-sockets/tcpserver.hpp> // 3rd party lib, under the MIT license
 
 #include "std_msgs/String.h"
 
@@ -64,6 +64,7 @@ void startServer() {
     };
 
     // Bind the server to a port
+    //TODO: read port number from a config file or command line arg
     tcpServer.Bind(8888, [](int errorCode, string errorMessage) {
         // BINDING FAILED:
         ROS_WARN_STREAM(errorCode << " : " << errorMessage);
