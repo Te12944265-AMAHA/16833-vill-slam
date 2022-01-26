@@ -109,14 +109,18 @@ class SerialHandler:
             pass
         elif msg[0] == 'pps':
             pass
-        elif msg[0] == 'connected':
-            print('Serial connected')
+        elif msg[0] == 'waiting':
+            print('Teensy waiting to start')
+        elif msg[0] == 'starting':
+            print('Teensy starts triggering')
+        elif msg[0] == 'stopping':
+            print('Teensy stops triggering')
         else:
             print("Serial message " + msg[0] + " not recognized")
         return True
 
     def close(self):
-        print("Stopping MCU work!")
+        print("Trying to stop teensy trigger...")
         t_stop = time.time()
         self.ser.write("stop".encode())
         while not rospy.is_shutdown() and time.time()-t_stop < 3:
