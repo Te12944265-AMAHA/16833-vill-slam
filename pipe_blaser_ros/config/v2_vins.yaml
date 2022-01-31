@@ -2,8 +2,8 @@
 sensor_type: 1 # 0 for blaser, 1 for pipeblaser
 
 #common parameters
-imu_topic: "/imu"
-#imu_topic: "/cx5/imu/data"
+#imu_topic: "/imu"
+imu_topic: "/cx5/imu/data"
 laser_topic: "/ring_laser_triangulator/laser_points"
 image_visual_topic: "/ximea/image_visual"
 image_profile_topic: "/ximea/image_profile"
@@ -36,16 +36,15 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [0.0129434, 0.00258926, -0.99991288,
-          0.99989806, 0.00599446, 0.01295873,
-          0.00602749, -0.99997868, -0.00251141]
+   data: [-0.99979079, -0.00230864, -0.02032363,
+          -0.0023738, 0.99999212, 0.00318244,
+           0.02031612, 0.00323002, -0.99978839 ]
 #Translation from camera frame to imu frame, imu^T_cam
 extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.005, 0.005, -0.035]
-   #data: [-0.02767714,  0.0041511 , -0.01297651]
+   data: [-0.02767714,  0.0041511 , -0.01297651]
 
 
 #feature traker paprameters
@@ -100,6 +99,7 @@ visualize_camera_size: 0.01      # size of camera marker in RVIZ
 visualize_camera_line_width: 0.002
 
 use_encoder: 0
+use_lidar: 0
 
 # image parameters
 width: 1232
@@ -109,8 +109,8 @@ center_v: 522.7624728277551
 
 # laser triangulation parameters
 #laser_plane: [0.328661, 0.573384, -100.0, 9.79346]
-#laser_plane: [0.554838, 0.50734, -100., 9.74935]
-laser_plane: [0.984891, 0.704338, -100.0, 9.562]
+laser_plane: [0.554838, 0.50734, -100., 9.74935]
+#laser_plane: [0.984891, 0.704338, -100.0, 9.562]
 laser_distance_range: [0.01, 1.0] # distance between 3d point & camera
 
 # laser detection parameters

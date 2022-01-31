@@ -100,6 +100,11 @@ add_executable(slam_estimator
   src/ThirdParty/VocabularyBinary.cpp
 
   src/encoder/encoder_manager.cpp
+  
+  src/lidar/lidar.cpp 
+  src/lidar/lidar_feature_extraction.cpp 
+  src/lidar/lidar_frame.cpp
+  src/lidar/lidar_manager.cpp
 
   src/factor/residual_stat_iter_cb.cpp
   )

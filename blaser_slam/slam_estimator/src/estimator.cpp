@@ -34,6 +34,7 @@ void Estimator::setParameter()
       Eigen::Matrix<double, 6, 6>::Identity();
   td = TD;
   EncoderFactor::sqrt_info = 1e1;
+  // TODO Lidar parameters
 }
 
 void Estimator::clearState()
@@ -1539,6 +1540,25 @@ void Estimator::optimization()
     }
   }
 
+  // Lidar
+  if (USE_LIDAR)
+  {
+    for (int i = 0; i < WINDOW_SIZE - 1; i++)
+    {
+      double relative_dist = e_manager.getRelativeAbsDist(
+          Headers[i].stamp.toSec(),
+          Headers[i + 1].stamp.toSec());
+      if (relative_dist < 0)
+        continue;
+      auto encoder_factor = EncoderFactor::Create(relative_dist);
+      ROS_DEBUG("encoder factor frame %d:\n\tt1: %.3f, t2: %.3f\n\tencoder: %f",
+                i, Headers[i].stamp.toSec(), Headers[i + 1].stamp.toSec(),
+                relative_dist);
+      problem.AddResidualBlock(encoder_factor, NULL,
+                               para_Pose[i], para_Pose[i + 1]);
+    }
+  }
+
   ROS_DEBUG("prepare for ceres: %f", t_prepare.toc());
 
   if (relocalization_info)
@@ -2020,6 +2040,13 @@ void Estimator::slideWindow()
     // discard all encode readings prior to the first keyframe in window
     e_manager.discardObsoleteReadings(Headers[0].stamp.toSec());
   }
+
+  if (USE_LIDAR)
+  {
+    // discard all Lidar readings prior to the first keyframe in window
+    e_manager.discardObsoleteReadings(Headers[0].stamp.toSec());
+  }
+
 }
 
 // real marginalization is removed in solve_ceres()

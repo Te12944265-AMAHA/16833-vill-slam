@@ -42,3 +42,8 @@ void lidar::Lidar::setMaxDistance(double max_distance_in){
 void lidar::Lidar::setMinDistance(double min_distance_in){
 	min_distance = min_distance_in;
 }
+
+Eigen::Vector3f lidar::pcl2eigen(LidarPoint pt){
+    Eigen::Vector3f res(pt.x, pt.y, pt.z);
+    return res;
+}

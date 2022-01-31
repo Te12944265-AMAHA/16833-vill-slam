@@ -11,10 +11,16 @@
 #ifndef _LIDAR_H_
 #define _LIDAR_H_
 
+#include <Eigen/Dense>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
 //define lidar parameter
+
+typedef pcl::PointXYZ LidarPoint;
+typedef pcl::PointCloud<LidarPoint> LidarPointCloud;
+typedef pcl::PointCloud<LidarPoint>::Ptr LidarPointCloudPtr;
+typedef pcl::PointCloud<LidarPoint>::ConstPtr LidarPointCloudConstPtr;
 
 namespace lidar{
 
@@ -42,12 +48,9 @@ class Lidar
         double vertical_angle;
 };
 
-}
+Eigen::Vector3f pcl2eigen(LidarPoint pt);
 
-typedef pcl::PointXYZ LidarPoint;
-typedef pcl::PointCloud<LidarPoint> LidarPointCloud;
-typedef pcl::PointCloud<LidarPoint>::Ptr LidarPointCloudPtr;
-typedef pcl::PointCloud<LidarPoint>::ConstPtr LidarPointCloudConstPtr;
+}
 
 #endif // _LIDAR_H_
 

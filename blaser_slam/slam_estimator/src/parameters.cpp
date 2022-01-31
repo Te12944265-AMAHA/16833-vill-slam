@@ -30,6 +30,7 @@ double IM_INTERVAL;
 double CAM_VIS_SCALE;
 double CAM_VIS_LINE_WIDTH;
 bool USE_ENCODER;
+bool USE_LIDAR;
 SENSOR_TYPE sensor_type;
 
 bool res_stat_count_jacobian = true;
@@ -95,6 +96,8 @@ void readParameters(ros::NodeHandle &n)
   COL = fsSettings["image_width"];
   int use_encoder = fsSettings["use_encoder"];
   USE_ENCODER = use_encoder > 0;
+  int use_lidar = fsSettings["use_lidar"];
+  USE_LIDAR = use_lidar > 0;
   ROS_INFO("ROW: %f COL: %f ", ROW, COL);
 
   CAM_VIS_SCALE = fsSettings["visualize_camera_size"];

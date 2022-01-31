@@ -22,7 +22,9 @@
 #include "factor/p2l_analytic_icp_factor.h"
 #include "factor/encoder_factor.h"
 #include "factor/residual_stat_iter_cb.h"
+//#include "factor/lidar_factor.h"
 
+// VLI basic sensor data manager
 #include "laser/laser_manager.h"
 #include "laser/feature_laser.h"
 #include "factor/projection_fixdepth_td_factor.h"
@@ -39,7 +41,9 @@
 #include "image/image_frame.h"
 #include "initial/static_init.h"
 
+// Additional sensor data managers
 #include "encoder/encoder_manager.h"
+#include "lidar/lidar_manager.h"
 
 class Estimator
 {
@@ -189,6 +193,8 @@ public:
   LaserFeatureMap map_;
 
   EncoderManager e_manager;
+
+  LidarManager lidar_manager;
 
   bool first_imu;
   bool is_valid, is_key;

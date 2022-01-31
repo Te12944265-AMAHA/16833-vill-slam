@@ -19,6 +19,7 @@
 #include <camodocal/camera_models/PinholeCamera.h>
 
 extern bool USE_ENCODER;
+extern bool USE_LIDAR;
 
 typedef std::map<int, std::vector<std::pair<int, Eigen::Matrix<double, 7, 1>>>> ImageType;
 

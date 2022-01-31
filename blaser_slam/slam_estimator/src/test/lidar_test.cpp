@@ -72,35 +72,62 @@ int main(int argc, char **argv)
     cout << "frame1 cylinder: " << frame1->cylinder_extracted_ << endl;
     cout << "frame2 cylinder: " << frame2->cylinder_extracted_ << endl;
 
-    /*
+    Eigen::Vector3f p1 = frame1->getAxisPoint();
+    Eigen::Vector3f d1 = frame1->getAxis();
+    auto p1s = p1 + 4.5*d1;
+    auto p1e = p1s - 1.5* d1;
+    LidarPoint p1s_l(p1s[0], p1s[1], p1s[2]);
+    LidarPoint p1e_l(p1e[0], p1e[1], p1e[2]);
+
+    Eigen::Vector3f p2 = frame2->getAxisPoint();
+    Eigen::Vector3f d2 = frame2->getAxis();
+    auto p2s = p2 - 1.5*d2;
+    auto p2e = p2s - 2*d2;
+    LidarPoint p2s_l(p2s[0], p2s[1], p2s[2]);
+    LidarPoint p2e_l(p2e[0], p2e[1], p2e[2]);
+
+  /*  
     /////////// visualize cylinder
     pcl::visualization::PCLVisualizer viewer2("cylinder");
     // Define R,G,B colors for the point cloud
-    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud_color_handler(cloud, 255, 255, 255);
+    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud_color_handler(cloud, 80, 70, 242);
     // We add the point cloud to the viewer and pass the color handler
     viewer2.addPointCloud(cloud, cloud_color_handler, "cloud");
     pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud_cylinder_color_handler(frame1->pc_cylinder_, 20, 20, 230); // Red
-    viewer2.addPointCloud(frame1->pc_cylinder_, cloud_cylinder_color_handler, "cylinder");
+    //viewer2.addPointCloud(frame1->pc_cylinder_, cloud_cylinder_color_handler, "cylinder");
 
-    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> transformed_cloud_color_handler(transformed_cloud, 210, 130, 130); // Red
+    viewer2.addArrow(p1s_l, p1e_l, 80, 70, 242, false, "arr");
+
+    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> transformed_cloud_color_handler(transformed_cloud, 242, 70, 80); // Red
     viewer2.addPointCloud(transformed_cloud, transformed_cloud_color_handler, "transformed_cloud");
     pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud2_cylinder_color_handler(frame2->pc_cylinder_, 20, 230, 200); // Red
-    viewer2.addPointCloud(frame2->pc_cylinder_, cloud2_cylinder_color_handler, "cylinder2");
+    //viewer2.addPointCloud(frame2->pc_cylinder_, cloud2_cylinder_color_handler, "cylinder2");
+    
+    viewer2.addArrow(p2e_l, p2s_l, 242, 70, 80, false, "arro");
 
-    viewer2.addCoordinateSystem(1.0, "cloud", 0);
-    viewer2.setBackgroundColor(0.05, 0.05, 0.05, 0); // Setting background to a dark grey
+    viewer2.addCoordinateSystem(0.3, "cloud", 0);
+    viewer2.setBackgroundColor(0.05, 0, 0, 0); // Setting background to white grey
+
+    viewer2.initCameraParameters();
+    viewer2.setCameraPosition(1, 2, -1,    0, 0, 1,   -0.1, 0.1, -0.25);
+    viewer2.setCameraFieldOfView(0.523599);
+    viewer2.setCameraClipDistances(0.00522511, 50); 
+
     viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
-    viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cylinder");
+    //viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cylinder");
     viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "transformed_cloud");
-    viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cylinder2");
-    // viewer.setPosition(800, 400); // Setting visualiser window position
+    //viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cylinder2");
+    //viewer2.setPosition(800, 400); // Setting visualiser window position
+    //viewer2.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 10, "arr");
+    //viewer2.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 10, "arro");
+
 
     while (!viewer2.wasStopped())
     { // Display the visualiser until 'q' key is pressed
         viewer2.spinOnce();
     }
-    */
-
+    
+*/
 
 
 
@@ -126,24 +153,39 @@ int main(int argc, char **argv)
     std::cout << transform_2.matrix() << std::endl;
 
 
+
     /////////// visualize
     pcl::visualization::PCLVisualizer viewer2("cylinder");
 
-    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud_color_handler(cloud, 255, 255, 255); // white
+    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud_color_handler(cloud, 80, 70, 242); // white
     viewer2.addPointCloud(cloud, cloud_color_handler, "cloud");
 
-    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> transformed_cloud_color_handler(transformed_cloud, 210, 130, 130); // pink
-    viewer2.addPointCloud(transformed_cloud, transformed_cloud_color_handler, "transformed_cloud");
+    viewer2.addArrow(p1s_l, p1e_l, 80, 70, 242, false, "arr");
     
-    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud2_color_handler(cloud2, 20, 230, 20); // green
+    pcl::visualization::PointCloudColorHandlerCustom<LidarPoint> cloud2_color_handler(cloud2, 242, 70, 80); // green
     viewer2.addPointCloud(cloud2, cloud2_color_handler, "cloud2");
 
-    viewer2.addCoordinateSystem(1.0, "cloud", 0);
-    viewer2.setBackgroundColor(0.05, 0.05, 0.05, 0); // Setting background to a dark grey
+    Eigen::Vector4f p2ss(p2s[0], p2s[1], p2s[2], 1);
+    Eigen::Vector4f p2ee(p2e[0], p2e[1], p2e[2], 1);
+    auto p2s_t = tf * p2ss;
+    auto p2e_t = tf * p2ee;
+    LidarPoint p2s_lt(p2s_t[0], p2s_t[1], p2s_t[2]);
+    LidarPoint p2e_lt(p2e_t[0], p2e_t[1], p2e_t[2]);
+    viewer2.addArrow(p2e_lt, p2s_lt, 242, 70, 80, false, "arro");
+
+    viewer2.addCoordinateSystem(0.3, "cloud", 0);
+    viewer2.setBackgroundColor(0.05, 0, 0, 0); // Setting background to white grey
+
+    viewer2.initCameraParameters();
+    viewer2.setCameraPosition(1, 2, -1,    0, 0, 1,   -0.1, 0.1, -0.25);
+    viewer2.setCameraFieldOfView(0.523599);
+    viewer2.setCameraClipDistances(0.00522511, 50);
+
     viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
-    viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "transformed_cloud");
     viewer2.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud2");
     // viewer.setPosition(800, 400); // Setting visualiser window position
+    viewer2.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 10, "arr");
+    viewer2.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 10, "arro");
 
     while (!viewer2.wasStopped())
     { // Display the visualiser until 'q' key is pressed
