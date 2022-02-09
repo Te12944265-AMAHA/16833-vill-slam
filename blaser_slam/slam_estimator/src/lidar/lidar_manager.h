@@ -38,11 +38,14 @@
 
 #include <ceres/ceres.h>
 #include "lidar_frame.h"
+#include "../factor/lidar_factor.h"
+#include "../utility/geometry_utils.h"
 #include <Eigen/Dense>
 
 #include "../parameters.h"
 #include <pcl/point_cloud.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include "../factor/pose_local_parameterization.h"
 
 class LidarManager
 {

@@ -13,7 +13,7 @@
 
 #include "lidar_manager.h"
 #include "../utility/geometry_utils.h"
-#include "../factor/pose_local_parameterization.h"
+
 
 #define LIDAR_ITER 10
 #define DT_CONVERGE_THRESH 1e-5
@@ -242,7 +242,9 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         // find transformation that minimizes p2p icp residual
         for (int j = 0; j < tmp_corr.size(); j++)
         {
-            auto lidar_factor = LidarFactor::Create(tmp_corr[j].first, tmp_corr[j].second);
+            Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>();
+            Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>();
+            auto lidar_factor = LidarFactor::Create(p1, p2);
             problem.AddResidualBlock(lidar_factor, loss_function, pose0, pose);
         }
         /*
@@ -271,9 +273,9 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         ceres::Solve(options, &problem, &summary);
 
         // transform src cloud before attempting to associate again
-        Eigen::Affine3d tf = Eigen::Affine3d::Identity();
-        tf.translation() = t;
-        tf.rotate(q);
+        Eigen::Affine3f tf = Eigen::Affine3f::Identity();
+        tf.translation() = t.cast<float>();
+        tf.rotate(q.cast<float>());
         pcl::transformPointCloud(*tmp_src, *tmp_src, tf);
 
         // check if we have converged

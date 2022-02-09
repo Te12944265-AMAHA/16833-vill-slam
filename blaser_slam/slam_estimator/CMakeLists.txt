@@ -135,5 +135,8 @@ add_executable(lidar_test
   src/lidar/lidar_feature_extraction.cpp 
   src/lidar/lidar_frame.cpp 
   src/lidar/lidar_manager.cpp
+  src/utility/geometry_utils.cpp
+  src/factor/pose_local_parameterization.cpp
+  src/factor/lidar_factor.cpp
   )
 target_link_libraries(lidar_test ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} ${PCL_VISUALIZATION_LIBRARIES})

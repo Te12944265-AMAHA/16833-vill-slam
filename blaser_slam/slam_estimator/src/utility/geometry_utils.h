@@ -71,4 +71,6 @@ void calculate_delta_tf(const Vector3d &t, const Quaterniond &q,
                         const Vector3d &t_prev, const Quaterniond &q_prev, 
                         Vector3d &dt, Quaterniond &dq);
 
+
+
 #endif //VINS_ESTIMATOR_GEOMETRY_UTILS_H

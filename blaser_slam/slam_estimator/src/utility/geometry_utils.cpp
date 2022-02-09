@@ -275,3 +275,4 @@ void calculate_delta_tf(const Vector3d &t, const Quaterniond &q,
   dt[1] = dT(1, 3);
   dt[2] = dT(2, 3);
 }
+

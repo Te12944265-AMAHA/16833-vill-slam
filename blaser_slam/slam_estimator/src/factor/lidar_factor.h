@@ -6,10 +6,11 @@
 #include <ceres/ceres.h>
 #include "../parameters.h"
 
+
 struct LidarFactor
 {
-public:
     static double sqrt_info;
+    
     Eigen::Quaterniond relative_q;
 
     const Eigen::Vector3d p_dst;
@@ -27,7 +28,7 @@ public:
 
     template <typename T>
     bool operator()(const T *const pose1, const T *const pose2, T* residuals) const {
-
+        
         // Make sure the Eigen::Vector world point is using the ceres::Jet type as it's Scalar type
         Eigen::Matrix<T,3,1> src; src << T(p_src[0]), T(p_src[1]), T(p_src[2]);
         Eigen::Matrix<T,3,1> dst; dst << T(p_dst[0]), T(p_dst[1]), T(p_dst[2]);
@@ -48,7 +49,7 @@ public:
 
         // The error is the difference between the predicted and observed position.
         residuals[0] = (p - p2).dot(p - p2);
-        residuals[0] *= sqrt_info;
+        residuals[0] *= T(sqrt_info);
 
         return true;
     }

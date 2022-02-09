@@ -35,6 +35,7 @@ void Estimator::setParameter()
   td = TD;
   EncoderFactor::sqrt_info = 1e1;
   // TODO Lidar parameters
+  LidarFactor::sqrt_info = 1e1;
 }
 
 void Estimator::clearState()
@@ -1551,7 +1552,9 @@ void Estimator::optimization()
       lidar_manager.align(lidar_pc1, lidar_pc2, lidar_corrs);
       // create a factor for each point pair
       for (int j = 0; j < lidar_corrs.size(); j++) {
-        auto lidar_factor = LidarFactor::Create(lidar_corrs[j].first, lidar_corrs[j].second);
+        Eigen::Vector3d p1 = lidar_corrs[j].first.cast<double>();
+        Eigen::Vector3d p2 = lidar_corrs[j].second.cast<double>();
+        auto lidar_factor = LidarFactor::Create(p1, p2);
         problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
       }
       ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %f",
