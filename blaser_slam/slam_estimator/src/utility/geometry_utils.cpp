@@ -250,3 +250,28 @@ bool computeLaserFrameNormal(LaserPointCloudPtr mid,
     it_mid->normal_z = normal(2);
   }
 }
+
+void pose2T(const Vector3d &t, const Quaterniond &q, Matrix4d &T) 
+{
+  T.fill(0.);
+  T(3, 3) = 1.;
+  T(0, 3) = t[0];
+  T(1, 3) = t[1];
+  T(2, 3) = t[2];
+  T.topLeftCorner<3, 3>() = q.toRotationMatrix();
+}
+
+// T_new = dT * T_prev
+void calculate_delta_tf(const Vector3d &t, const Quaterniond &q, 
+                        const Vector3d &t_prev, const Quaterniond &q_prev, 
+                        Vector3d &dt, Quaterniond &dq)
+{
+  Matrix4d Tnew, Tprev, dT;
+  pose2T(t, q, Tnew);
+  pose2T(t_prev, q_prev, Tprev);
+  dT = Tnew * invT(Tprev);
+  dq = dT.topLeftCorner<3,3>();
+  dt[0] = dT(0, 3);
+  dt[1] = dT(1, 3);
+  dt[2] = dT(2, 3);
+}

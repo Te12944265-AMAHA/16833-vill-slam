@@ -1,5 +1,5 @@
 <launch>
-    <arg name="republish_compressed_image" default="0"/>
+    <arg name="republish_compressed_image" default="1"/>
     <arg name="config_path" default = "$(find pipe_blaser_ros)/config/v2_vins.yaml" />
 
     <!-- Feature tracker -->

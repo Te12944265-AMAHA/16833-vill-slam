@@ -22,7 +22,7 @@
 #include "factor/p2l_analytic_icp_factor.h"
 #include "factor/encoder_factor.h"
 #include "factor/residual_stat_iter_cb.h"
-//#include "factor/lidar_factor.h"
+#include "factor/lidar_factor.h"
 
 // VLI basic sensor data manager
 #include "laser/laser_manager.h"

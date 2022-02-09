@@ -27,10 +27,11 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
 
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> cloud0(new pcl::PointCloud<pcl::PointXYZRGB>);
     LidarPointCloudPtr cloud(new LidarPointCloud);
     LidarPointCloudPtr transformed_cloud(new LidarPointCloud);
-    string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample.pcd";
-    string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample_tf.pcd";
+    string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/mapped.pcd";
+    string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/lidar.pcd";
 
 
     // Read in the cloud data
@@ -59,12 +60,15 @@ int main(int argc, char **argv)
     */
 
 
-    if (pcl::io::loadPCDFile<LidarPoint>(filename_1, *cloud) == -1 
+    if (pcl::io::loadPCDFile<pcl::PointXYZRGB>(filename_1, *cloud0) == -1 
         || pcl::io::loadPCDFile<LidarPoint>(filename_2, *transformed_cloud) == -1)
     {
         cout << "Couldn't read pcd file." << endl;
         return -1;
     }
+
+    copyPointCloud(*cloud0, *cloud);
+    cout << cloud->points.size() << endl;
 
     LidarManager lidar_manager;
     LidarFramePtr frame1(new LidarFrame(cloud, 0, 0));

@@ -12,6 +12,12 @@
  */
 
 #include "lidar_manager.h"
+#include "../utility/geometry_utils.h"
+#include "../factor/pose_local_parameterization.h"
+
+#define LIDAR_ITER 10
+#define DT_CONVERGE_THRESH 1e-5
+#define DQ_CONVERGE_THRESH 1e-5
 
 LidarManager::LidarManager() {}
 
@@ -64,6 +70,7 @@ int LidarManager::getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2,
 
     Eigen::Vector3f vec1 = frame1->getAxis();
     Eigen::Vector3f vec2 = frame2->getAxis();
+
     // 1. straighten frame 1 cylinder and apply the same tf to frame 2
     Eigen::Vector3f vecz(0.0, 0.0, 1.0);
     Eigen::Quaternionf dq_vec1;
@@ -107,6 +114,21 @@ int LidarManager::getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2,
     return 0;
 }
 
+// Lidar cylinder factor: currently not in use
+int LidarManager::getRelativeTf(double t1, double t2, Eigen::Matrix4f &T)
+{
+    // TODO
+    // if (lidar_window_.count(t2) == 0 || lidar_window_.count(t1) == 0)
+    if (0)
+    {
+        ROS_WARN("Lidar factor invalid value, should only happen at beginning??");
+        return -1;
+    }
+    LidarFramePtr frame1 = lidar_window_[t1];
+    LidarFramePtr frame2 = lidar_window_[t2];
+    return getRelativeTf(frame1, frame2, T);
+}
+
 void LidarManager::resetKDtree(LidarPointCloudConstPtr target_cloud)
 {
     kdtree.setInputCloud(target_cloud);
@@ -126,9 +148,10 @@ void LidarManager::resetKDtree(LidarPointCloudConstPtr target_cloud)
     */
 }
 
-void LidarManager::associate(LidarPointCloudConstPtr source_cloud, 
-                                LidarPointCloudConstPtr target_cloud, 
-                                std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>>& corrs)
+// find point pairs through knn
+void LidarManager::associate(LidarPointCloudConstPtr source_cloud,
+                             LidarPointCloudConstPtr target_cloud,
+                             std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs)
 {
 
     for (int i = 0; i < source_cloud->size(); i++)
@@ -136,17 +159,17 @@ void LidarManager::associate(LidarPointCloudConstPtr source_cloud,
         LidarPoint searchPoint = source_cloud->points[i];
         std::vector<int> pointIdxKNNSearch(K);
         std::vector<float> pointKNNSquaredDistance(K);
-        //float radius = 256.0f * rand() / (RAND_MAX + 1.0f);
+        // float radius = 256.0f * rand() / (RAND_MAX + 1.0f);
         if (kdtree.nearestKSearch(searchPoint, K, pointIdxKNNSearch, pointKNNSquaredDistance) > 0)
         {
-            if (pointKNNSquaredDistance[0] < dist_thresh) {
+            if (pointKNNSquaredDistance[0] < dist_thresh)
+            {
                 LidarPoint pt = (*target_cloud)[pointIdxKNNSearch[0]];
                 Eigen::Vector3f p1(pt.x, pt.y, pt.z);
                 Eigen::Vector3f p2(searchPoint.x, searchPoint.y, searchPoint.z);
                 corrs.push_back(std::make_pair(p1, p2));
             }
         }
-
     }
 
     /*
@@ -173,4 +196,95 @@ void LidarManager::associate(LidarPointCloudConstPtr source_cloud,
         m_vAssociation.emplace_back(std::make_pair(target_index,dist_sqr));
     }
     */
+}
+
+// find correct point correspondences
+void LidarManager::align(LidarPointCloudConstPtr source_cloud,
+                         LidarPointCloudConstPtr target_cloud,
+                         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs)
+{
+    double pose[SIZE_POSE]; // the transformation T such that dst = T * src
+    double pose0[SIZE_POSE];
+    Eigen::Matrix<double, 3, 1> t = Eigen::Map<const Eigen::Matrix<double, 3, 1>>(pose);
+    Eigen::Quaternion<double> q = Eigen::Map<const Eigen::Quaternion<double>>(pose + 3);
+    t << 0,0,0;
+    q = Eigen::Quaterniond::Identity();
+
+    Eigen::Quaterniond q_prev, dq;
+    Eigen::Vector3d t_prev, dt;
+    std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> tmp_corr;
+
+    LidarPointCloudPtr tmp_src(new LidarPointCloud());
+    *tmp_src = *source_cloud;
+
+    // attemp to find the correct data association after a few iters
+    for (int iter = 0; iter < LIDAR_ITER; iter++)
+    {
+        tmp_corr.clear();
+        // data association
+        associate(tmp_src, target_cloud, tmp_corr);
+
+        ceres::Problem problem;
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+        options.minimizer_progress_to_stdout = false;
+        // options.max_solver_time_in_seconds = SOLVER_TIME * 3;
+        options.max_num_iterations = 100;
+        ceres::Solver::Summary summary;
+        ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
+        ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+
+        // we're only optimizing the relative T
+        problem.AddParameterBlock(pose, SIZE_POSE, local_parameterization);
+        problem.AddParameterBlock(pose0, SIZE_POSE, local_parameterization);
+        problem.SetParameterBlockConstant(pose0);
+
+        // find transformation that minimizes p2p icp residual
+        for (int j = 0; j < tmp_corr.size(); j++)
+        {
+            auto lidar_factor = LidarFactor::Create(tmp_corr[j].first, tmp_corr[j].second);
+            problem.AddResidualBlock(lidar_factor, loss_function, pose0, pose);
+        }
+        /*
+        for (int src_index = 0; src_index < m_vAssociation.size(); src_index++)
+        {
+            int target_index = m_vAssociation.at(src_index).first;
+            if (target_index == -1) // no match is found for this source point
+                continue;
+
+            CloudPoint src_pt = m_stCloudPoints_src.at(src_index);
+            CloudPoint target_pt = m_stCloudPoints_target.at(target_index);
+
+            if (1) // use p2p icp
+            {
+                // point to point constraint
+                Eigen::DiagonalMatrix<double, 2> cov(0.1, 0.1);
+                Eigen::Matrix2d sqrt_information = cov;
+                sqrt_information = sqrt_information.inverse().llt().matrixL();
+                double weight = 1.0;
+                ceres::CostFunction *cost_function = ceres::slam2d::PP2dErrorTerm::Create(src_pt.x, src_pt.y, target_pt.x, target_pt.y,
+                                                                                            sqrt_information, weight);
+                problem.AddResidualBlock(cost_function, loss_function, euler_array, t_array);
+            }
+        }
+        */
+        ceres::Solve(options, &problem, &summary);
+
+        // transform src cloud before attempting to associate again
+        Eigen::Affine3d tf = Eigen::Affine3d::Identity();
+        tf.translation() = t;
+        tf.rotate(q);
+        pcl::transformPointCloud(*tmp_src, *tmp_src, tf);
+
+        // check if we have converged
+        calculate_delta_tf(t, q, t_prev, q_prev, dt, dq);
+        t_prev = t;
+        q_prev = q;
+        if (iter > 0 && dt.norm() < DT_CONVERGE_THRESH && dq.norm() < DQ_CONVERGE_THRESH)
+        {
+            break;
+        }
+    }
+
+    corrs = tmp_corr;
 }

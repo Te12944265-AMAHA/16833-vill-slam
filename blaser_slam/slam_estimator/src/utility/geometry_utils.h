@@ -46,6 +46,7 @@ Vector3d transformPoint(const Matrix4d& T, const Vector3d& p);
 
 void T2Rt(const Matrix4d& T, Matrix3d& R, Vector3d& t);
 
+void pose2T(const Vector3d &t, const Quaterniond &q, Matrix4d &T) ;
 
 void PoseMsg2T(const geometry_msgs::Pose& pose_msg, Matrix4d& T);
 
@@ -63,5 +64,11 @@ bool computeLaserFrameNormal(LaserPointCloudPtr mid,
 bool computeLaserFrameNormal(LaserPointCloudPtr mid,
                              LaserPointCloudConstPtr right,
                              const Vector3d& cam_pos);
+
+
+
+void calculate_delta_tf(const Vector3d &t, const Quaterniond &q, 
+                        const Vector3d &t_prev, const Quaterniond &q_prev, 
+                        Vector3d &dt, Quaterniond &dq);
 
 #endif //VINS_ESTIMATOR_GEOMETRY_UTILS_H

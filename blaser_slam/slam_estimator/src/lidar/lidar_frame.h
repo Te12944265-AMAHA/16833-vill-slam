@@ -66,8 +66,8 @@ private:
     const size_t seq_corresp_; // corresponding visual image's sequence
 
     const int point_filter_num = 2;
-    const double min_dist = 0.2;
-    const double max_dist = 1.5;
+    const double min_dist = 0;
+    const double max_dist = 100;
 };
 
 typedef std::shared_ptr<LidarFrame> LidarFramePtr;

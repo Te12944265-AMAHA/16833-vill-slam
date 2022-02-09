@@ -82,6 +82,7 @@ add_executable(slam_estimator
   src/factor/point2plane_icp_factor.cpp
   src/factor/p2l_analytic_icp_factor.cpp
   src/factor/encoder_factor.cpp
+  src/factor/lidar_factor.cpp
 
   src/map/map.cpp
   src/map/laser_map_point.cpp

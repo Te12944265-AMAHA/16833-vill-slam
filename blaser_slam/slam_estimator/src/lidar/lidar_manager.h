@@ -34,10 +34,13 @@
 
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl/common/transforms.h>
 
+#include <ceres/ceres.h>
 #include "lidar_frame.h"
 #include <Eigen/Dense>
 
+#include "../parameters.h"
 #include <pcl/point_cloud.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
@@ -50,9 +53,15 @@ public:
     void discardObsoleteReadings(double time);
 
     int getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2, Eigen::Matrix4f &T);
+    int getRelativeTf(double t1, double t2, Eigen::Matrix4f &T);
+
     void associate(LidarPointCloudConstPtr source_cloud, 
                                 LidarPointCloudConstPtr target_cloud, 
                                 std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>>& corrs);
+    void align(LidarPointCloudConstPtr source_cloud,
+               LidarPointCloudConstPtr target_cloud,
+               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs);
+
     void resetKDtree(LidarPointCloudConstPtr target_cloud);
 
 private:

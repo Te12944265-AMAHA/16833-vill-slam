@@ -184,10 +184,12 @@ int LidarExtractor::findCylinder(const LidarPointCloudPtr &pc_in,
     pcl::PointIndices::Ptr inliers_plane(new pcl::PointIndices), inliers_cylinder(new pcl::PointIndices);
 
     // Build a passthrough filter to remove spurious NaNs and scene background
-    pass.setInputCloud(pc_in);
-    pass.setFilterFieldName("z");
-    pass.setFilterLimits(0, 1.5);
-    pass.filter(*cloud_filtered);
+    // pass.setInputCloud(pc_in);
+    // pass.setFilterFieldName("z");
+    // pass.setFilterLimits(0, 1.5);
+    // pass.filter(*cloud_filtered);
+
+    copyPointCloud(*pc_in, *cloud_filtered);
 
     // Estimate point normals
     ne.setSearchMethod(tree);

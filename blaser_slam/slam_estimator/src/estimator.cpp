@@ -1545,17 +1545,18 @@ void Estimator::optimization()
   {
     for (int i = 0; i < WINDOW_SIZE - 1; i++)
     {
-      double relative_dist = e_manager.getRelativeAbsDist(
-          Headers[i].stamp.toSec(),
-          Headers[i + 1].stamp.toSec());
-      if (relative_dist < 0)
-        continue;
-      auto encoder_factor = EncoderFactor::Create(relative_dist);
-      ROS_DEBUG("encoder factor frame %d:\n\tt1: %.3f, t2: %.3f\n\tencoder: %f",
+      // get two frames and associate
+      LidarPointCloudPtr lidar_pc1, lidar_pc2;
+      vector<pair<Eigen::Vector3f, Eigen::Vector3f>> lidar_corrs;
+      lidar_manager.align(lidar_pc1, lidar_pc2, lidar_corrs);
+      // create a factor for each point pair
+      for (int j = 0; j < lidar_corrs.size(); j++) {
+        auto lidar_factor = LidarFactor::Create(lidar_corrs[j].first, lidar_corrs[j].second);
+        problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
+      }
+      ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %f",
                 i, Headers[i].stamp.toSec(), Headers[i + 1].stamp.toSec(),
-                relative_dist);
-      problem.AddResidualBlock(encoder_factor, NULL,
-                               para_Pose[i], para_Pose[i + 1]);
+                lidar_corrs.size());
     }
   }
 
