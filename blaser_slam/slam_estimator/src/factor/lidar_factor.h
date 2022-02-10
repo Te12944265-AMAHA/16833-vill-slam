@@ -55,7 +55,7 @@ struct LidarFactor
     }
 
     static ceres::CostFunction* Create(const Eigen::Vector3d& dst, const Eigen::Vector3d& src) {
-        return (new ceres::AutoDiffCostFunction<LidarFactor, 7, 7, 1>(new LidarFactor(dst, src)));
+        return (new ceres::AutoDiffCostFunction<LidarFactor, 1, 7, 7>(new LidarFactor(dst, src)));
     }
 
 

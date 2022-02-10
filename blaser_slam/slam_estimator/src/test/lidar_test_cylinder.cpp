@@ -1,5 +1,5 @@
 /**
- * @file lidar_test.cpp
+ * @file lidar_test_cylinder.cpp
  *
  * @brief 1) Read in point cloud, process it into a rotated and translated version, save
  *        2) Find transformation between the two clouds

@@ -129,8 +129,8 @@ target_link_libraries(icp_underconstrain_test
   ${catkin_LIBRARIES} ${CERES_LIBRARIES} ${MATIO_LIBRARIES})
 
 
-add_executable(lidar_test
-  src/test/lidar_test.cpp
+add_executable(lidar_test_cylinder
+  src/test/lidar_test_cylinder.cpp
   src/lidar/lidar.cpp 
   src/lidar/lidar_feature_extraction.cpp 
   src/lidar/lidar_frame.cpp 
@@ -138,5 +138,31 @@ add_executable(lidar_test
   src/utility/geometry_utils.cpp
   src/factor/pose_local_parameterization.cpp
   src/factor/lidar_factor.cpp
-  )
-target_link_libraries(lidar_test ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} ${PCL_VISUALIZATION_LIBRARIES})
+)
+target_link_libraries(lidar_test_cylinder 
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${PCL_COMMON_LIBRARIES} 
+  ${PCL_IO_LIBRARIES} 
+  ${PCL_VISUALIZATION_LIBRARIES}
+)
+
+
+add_executable(lidar_test_icp
+  src/test/lidar_test_icp.cpp
+  src/lidar/lidar.cpp 
+  src/lidar/lidar_feature_extraction.cpp 
+  src/lidar/lidar_frame.cpp 
+  src/lidar/lidar_manager.cpp
+  src/utility/geometry_utils.cpp
+  src/factor/pose_local_parameterization.cpp
+  src/factor/lidar_factor.cpp
+)
+target_link_libraries(lidar_test_icp
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${PCL_COMMON_LIBRARIES} 
+  ${PCL_IO_LIBRARIES} 
+  ${PCL_VISUALIZATION_LIBRARIES}
+  ${CERES_LIBRARIES}
+)

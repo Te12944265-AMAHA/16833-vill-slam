@@ -13,13 +13,16 @@
 
 #include "lidar_manager.h"
 #include "../utility/geometry_utils.h"
+#include <chrono>
 
 
 #define LIDAR_ITER 10
 #define DT_CONVERGE_THRESH 1e-5
 #define DQ_CONVERGE_THRESH 1e-5
 
-LidarManager::LidarManager() {}
+LidarManager::LidarManager() {
+    LidarFactor::sqrt_info = 1e1;
+}
 
 void LidarManager::addLidarFrame(LidarFrameConstPtr frame)
 {
@@ -201,7 +204,8 @@ void LidarManager::associate(LidarPointCloudConstPtr source_cloud,
 // find correct point correspondences
 void LidarManager::align(LidarPointCloudConstPtr source_cloud,
                          LidarPointCloudConstPtr target_cloud,
-                         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs)
+                         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
+                         Eigen::Affine3f &tf_out)
 {
     double pose[SIZE_POSE]; // the transformation T such that dst = T * src
     double pose0[SIZE_POSE];
@@ -209,6 +213,10 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     Eigen::Quaternion<double> q = Eigen::Map<const Eigen::Quaternion<double>>(pose + 3);
     t << 0,0,0;
     q = Eigen::Quaterniond::Identity();
+    Eigen::Matrix<double, 3, 1> t0 = Eigen::Map<const Eigen::Matrix<double, 3, 1>>(pose0);
+    Eigen::Quaternion<double> q0 = Eigen::Map<const Eigen::Quaternion<double>>(pose0 + 3);
+    t0 << 0,0,0;
+    q0 = Eigen::Quaterniond::Identity();
 
     Eigen::Quaterniond q_prev, dq;
     Eigen::Vector3d t_prev, dt;
@@ -217,12 +225,16 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     LidarPointCloudPtr tmp_src(new LidarPointCloud());
     *tmp_src = *source_cloud;
 
+    resetKDtree(target_cloud);
+
+    auto t_start = chrono::high_resolution_clock::now();
     // attemp to find the correct data association after a few iters
     for (int iter = 0; iter < LIDAR_ITER; iter++)
     {
         tmp_corr.clear();
         // data association
         associate(tmp_src, target_cloud, tmp_corr);
+        cout << "iter " << iter << ", #corrs = " << tmp_corr.size() << endl;
 
         ceres::Problem problem;
         ceres::Solver::Options options;
@@ -231,7 +243,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         // options.max_solver_time_in_seconds = SOLVER_TIME * 3;
         options.max_num_iterations = 100;
         ceres::Solver::Summary summary;
-        ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
+        //ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
 
         // we're only optimizing the relative T
@@ -245,7 +257,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
             Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>();
             Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>();
             auto lidar_factor = LidarFactor::Create(p1, p2);
-            problem.AddResidualBlock(lidar_factor, loss_function, pose0, pose);
+            problem.AddResidualBlock(lidar_factor, NULL, pose0, pose);
         }
         /*
         for (int src_index = 0; src_index < m_vAssociation.size(); src_index++)
@@ -282,11 +294,22 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         calculate_delta_tf(t, q, t_prev, q_prev, dt, dq);
         t_prev = t;
         q_prev = q;
+        cout << tf.matrix() << endl;
+        cout << "dt norm: " << dt.norm() << "dq norm: " << dq.norm() << endl << endl;
         if (iter > 0 && dt.norm() < DT_CONVERGE_THRESH && dq.norm() < DQ_CONVERGE_THRESH)
         {
             break;
         }
     }
+    Eigen::Affine3f tf0 = Eigen::Affine3f::Identity();
+    tf0.translation() = t0.cast<float>();
+    tf0.rotate(q0.cast<float>());
+    cout << "pose0: " << endl << tf0.matrix() << endl;
 
+    tf_out.translation() = t.cast<float>();
+    tf_out.rotate(q.cast<float>());
+    auto t_end = chrono::high_resolution_clock::now();
+    double t_elapse = chrono::duration<double>(t_end - t_start).count();
+    cout << "Time to align (s): " << std::setprecision(9) << t_elapse << endl;
     corrs = tmp_corr;
 }

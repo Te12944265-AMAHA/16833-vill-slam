@@ -1549,7 +1549,8 @@ void Estimator::optimization()
       // get two frames and associate
       LidarPointCloudPtr lidar_pc1, lidar_pc2;
       vector<pair<Eigen::Vector3f, Eigen::Vector3f>> lidar_corrs;
-      lidar_manager.align(lidar_pc1, lidar_pc2, lidar_corrs);
+      Eigen::Affine3f lidar_tf;
+      lidar_manager.align(lidar_pc1, lidar_pc2, lidar_corrs, lidar_tf);
       // create a factor for each point pair
       for (int j = 0; j < lidar_corrs.size(); j++) {
         Eigen::Vector3d p1 = lidar_corrs[j].first.cast<double>();

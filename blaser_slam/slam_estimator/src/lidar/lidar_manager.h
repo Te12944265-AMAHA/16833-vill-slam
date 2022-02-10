@@ -63,7 +63,8 @@ public:
                                 std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>>& corrs);
     void align(LidarPointCloudConstPtr source_cloud,
                LidarPointCloudConstPtr target_cloud,
-               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs);
+               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
+               Eigen::Affine3f &tf_out);
 
     void resetKDtree(LidarPointCloudConstPtr target_cloud);
 
@@ -74,7 +75,7 @@ private:
 
     pcl::KdTreeFLANN<LidarPoint> kdtree;
     int K = 1;
-    float dist_thresh = 0.005;
+    float dist_thresh = 1;
 
     void findVectorRot(Eigen::Vector3f &vec1, Eigen::Vector3f &vec2, Eigen::Quaternionf &q_out);
 
