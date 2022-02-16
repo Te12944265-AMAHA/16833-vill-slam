@@ -75,7 +75,7 @@ private:
 
     pcl::KdTreeFLANN<LidarPoint> kdtree;
     int K = 1;
-    float dist_thresh = 1;
+    float dist_thresh = 10;
 
     void findVectorRot(Eigen::Vector3f &vec1, Eigen::Vector3f &vec2, Eigen::Quaternionf &q_out);
 

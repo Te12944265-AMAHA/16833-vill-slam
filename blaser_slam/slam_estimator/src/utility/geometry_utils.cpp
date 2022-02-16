@@ -276,3 +276,24 @@ void calculate_delta_tf(const Vector3d &t, const Quaterniond &q,
   dt[2] = dT(2, 3);
 }
 
+void tf2array(const Vector3d &t, const Quaterniond &q, double *pose_arr)
+{
+  pose_arr[0] = t.x();
+  pose_arr[1] = t.y();
+  pose_arr[2] = t.z();
+  pose_arr[3] = q.x();
+  pose_arr[4] = q.y();
+  pose_arr[5] = q.z();
+  pose_arr[6] = q.w();
+}
+
+void array2tf(Vector3d &t, Quaterniond &q, const double *pose_arr) 
+{
+  t.x() = pose_arr[0];
+  t.y() = pose_arr[1];
+  t.z() = pose_arr[2];
+  q.x() = pose_arr[3];
+  q.y() = pose_arr[4];
+  q.z() = pose_arr[5];
+  q.w() = pose_arr[6];
+}

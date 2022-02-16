@@ -15,12 +15,12 @@
 #include "../utility/geometry_utils.h"
 #include <chrono>
 
-
 #define LIDAR_ITER 10
 #define DT_CONVERGE_THRESH 1e-5
 #define DQ_CONVERGE_THRESH 1e-5
 
-LidarManager::LidarManager() {
+LidarManager::LidarManager()
+{
     LidarFactor::sqrt_info = 1e1;
 }
 
@@ -209,14 +209,12 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
 {
     double pose[SIZE_POSE]; // the transformation T such that dst = T * src
     double pose0[SIZE_POSE];
-    Eigen::Matrix<double, 3, 1> t = Eigen::Map<const Eigen::Matrix<double, 3, 1>>(pose);
-    Eigen::Quaternion<double> q = Eigen::Map<const Eigen::Quaternion<double>>(pose + 3);
-    t << 0,0,0;
+    Eigen::Matrix<double, 3, 1> t;
+    Eigen::Quaternion<double> q;
+    t << 0, 0, 0;
     q = Eigen::Quaterniond::Identity();
-    Eigen::Matrix<double, 3, 1> t0 = Eigen::Map<const Eigen::Matrix<double, 3, 1>>(pose0);
-    Eigen::Quaternion<double> q0 = Eigen::Map<const Eigen::Quaternion<double>>(pose0 + 3);
-    t0 << 0,0,0;
-    q0 = Eigen::Quaterniond::Identity();
+    tf2array(t, q, pose);
+    tf2array(t, q, pose0);
 
     Eigen::Quaterniond q_prev, dq;
     Eigen::Vector3d t_prev, dt;
@@ -226,6 +224,18 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     *tmp_src = *source_cloud;
 
     resetKDtree(target_cloud);
+
+    cout << "original pose: " << endl;
+    for (int k = 0; k < SIZE_POSE; k++)
+    {
+        cout << pose[k] << ", ";
+    }
+    cout << endl;
+
+    cout << "tf out before iters: " << endl;
+    cout << tf_out.matrix() << endl;
+
+    Eigen::Affine3f tf = Eigen::Affine3f::Identity();
 
     auto t_start = chrono::high_resolution_clock::now();
     // attemp to find the correct data association after a few iters
@@ -243,7 +253,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         // options.max_solver_time_in_seconds = SOLVER_TIME * 3;
         options.max_num_iterations = 100;
         ceres::Solver::Summary summary;
-        //ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
+        // ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
 
         // we're only optimizing the relative T
@@ -256,6 +266,12 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         {
             Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>();
             Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>();
+            if (j % 10000 == 0)
+            {
+                cout << "p1: " << p1 << endl;
+                cout << "p2: " << p2 << endl
+                     << endl;
+            }
             auto lidar_factor = LidarFactor::Create(p1, p2);
             problem.AddResidualBlock(lidar_factor, NULL, pose0, pose);
         }
@@ -284,30 +300,35 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         */
         ceres::Solve(options, &problem, &summary);
 
+        cout << "pose: " << endl;
+        for (int k = 0; k < SIZE_POSE; k++)
+        {
+            cout << pose[k] << ", ";
+        }
+        cout << endl;
         // transform src cloud before attempting to associate again
-        Eigen::Affine3f tf = Eigen::Affine3f::Identity();
-        tf.translation() = t.cast<float>();
-        tf.rotate(q.cast<float>());
-        pcl::transformPointCloud(*tmp_src, *tmp_src, tf);
+        array2tf(t, q, pose); // in double
+        tf_out.translation() = t.cast<float>();
+        tf_out.rotate(q.cast<float>());
+        pcl::transformPointCloud(*tmp_src, *tmp_src, tf_out);
 
         // check if we have converged
         calculate_delta_tf(t, q, t_prev, q_prev, dt, dq);
         t_prev = t;
         q_prev = q;
-        cout << tf.matrix() << endl;
-        cout << "dt norm: " << dt.norm() << "dq norm: " << dq.norm() << endl << endl;
+        cout << "tf out: " << endl;
+        cout << tf_out.matrix() << endl;
+        cout << "dt norm: " << dt.norm() << "dq norm: " << dq.norm() << endl
+             << endl;
         if (iter > 0 && dt.norm() < DT_CONVERGE_THRESH && dq.norm() < DQ_CONVERGE_THRESH)
         {
             break;
         }
     }
-    Eigen::Affine3f tf0 = Eigen::Affine3f::Identity();
-    tf0.translation() = t0.cast<float>();
-    tf0.rotate(q0.cast<float>());
-    cout << "pose0: " << endl << tf0.matrix() << endl;
 
-    tf_out.translation() = t.cast<float>();
-    tf_out.rotate(q.cast<float>());
+    cout << "t: " << t << endl;
+    cout << "q: " << q.toRotationMatrix() << endl;
+
     auto t_end = chrono::high_resolution_clock::now();
     double t_elapse = chrono::duration<double>(t_end - t_start).count();
     cout << "Time to align (s): " << std::setprecision(9) << t_elapse << endl;
