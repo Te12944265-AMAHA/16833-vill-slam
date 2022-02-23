@@ -166,3 +166,20 @@ target_link_libraries(lidar_test_icp
   ${PCL_VISUALIZATION_LIBRARIES}
   ${CERES_LIBRARIES}
 )
+
+
+add_executable(lidar_tmp
+  src/test/lidar_tmp.cpp
+  src/lidar/lidar.cpp 
+  src/lidar/lidar_feature_extraction.cpp 
+  src/lidar/lidar_frame.cpp 
+)
+target_link_libraries(lidar_tmp
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${PCL_COMMON_LIBRARIES} 
+  ${PCL_IO_LIBRARIES} 
+  ${PCL_VISUALIZATION_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${OpenCV_LIBS}
+)
