@@ -71,8 +71,8 @@ int main(int argc, char **argv)
     cout << cloud->points.size() << endl;
 
     LidarManager lidar_manager;
-    LidarFramePtr frame1(new LidarFrame(cloud, 0, 0));
-    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 1, 0));
+    LidarFramePtr frame1(new LidarFrame(cloud, 0, 0, 5));
+    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 1, 0, 100));
     cout << "frame1 cylinder: " << frame1->cylinder_extracted_ << endl;
     cout << "frame2 cylinder: " << frame2->cylinder_extracted_ << endl;
 
@@ -135,8 +135,6 @@ int main(int argc, char **argv)
 
 
 
-    lidar_manager.addLidarFrame(frame1);
-    lidar_manager.addLidarFrame(frame2);
     Eigen::Matrix4f tf;
     lidar_manager.getRelativeTf(frame1, frame2, tf);
     cout << "tf: " << tf << endl;

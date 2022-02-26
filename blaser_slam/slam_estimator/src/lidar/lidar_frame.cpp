@@ -10,9 +10,9 @@
 
 #include "lidar_frame.h"
 
-LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t seq)
+LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t seq, int filter_num)
     : timestamp_(timestamp), seq_corresp_(seq), pc_l_(new LidarPointCloud),
-      pc_cylinder_(new LidarPointCloud), pc_edge_(new LidarPointCloud), pc_surf_(new LidarPointCloud)
+      pc_cylinder_(new LidarPointCloud), pc_edge_(new LidarPointCloud), pc_surf_(new LidarPointCloud), point_filter_num(filter_num)
 {
     axis(0) = 0;
     axis(1) = 0;
@@ -21,6 +21,11 @@ LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t s
     // extract features
     //lidar_extractor.featureExtraction(pc_l_, pc_edge, pc_surf);
     //cylinder_extracted_ = lidar_extractor.findCylinder(pc_l_, pc_cylinder_, cylinder_coeff_);
+}
+
+void LidarFrame::get_pointcloud(LidarPointCloudPtr cloud_out)
+{
+    *cloud_out = *pc_l_;
 }
 
 Eigen::Vector3f LidarFrame::getAxis()

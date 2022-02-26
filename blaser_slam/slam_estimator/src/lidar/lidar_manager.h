@@ -47,12 +47,21 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include "../factor/pose_local_parameterization.h"
 
+typedef struct lidar_data_frame
+{
+    double feature_time;
+    LidarFramePtr f1_p;
+    LidarFramePtr f2_p;
+    Eigen::Matrix4f T_1_cur;
+    Eigen::Matrix4f T_cur_2;
+} LidarDataFrame;
+
 class LidarManager
 {
 public:
     LidarManager();
 
-    void addLidarFrame(LidarFrameConstPtr frame);
+    void addLidarDataFrame(LidarDataFrame frame);
     void discardObsoleteReadings(double time);
 
     int getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2, Eigen::Matrix4f &T);
@@ -66,10 +75,16 @@ public:
                std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
                Eigen::Affine3f &tf_out);
 
+    void align_pcl_icp(LidarPointCloudConstPtr source_cloud,
+               LidarPointCloudConstPtr target_cloud,
+               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
+               Eigen::Affine3f &tf_out);
+
     void resetKDtree(LidarPointCloudConstPtr target_cloud);
 
 private:
-    std::vector<LidarFramePtr> lidar_window_;
+    // maps feature time to data frame
+    std::map<double, LidarDataFrame> lidar_window_;
 
     std::string lidar_topic;
 

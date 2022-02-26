@@ -24,8 +24,16 @@
 class LidarFrame
 {
 public:
+    LidarFrame()
+    {
+        axis(0) = 0;
+        axis(1) = 0;
+        axis(2) = 0;
+        timestamp_ = 0.0;
+        seq_corresp_ = 0;
+    };
     explicit LidarFrame(LidarPointCloudConstPtr _pc_l,
-                        double timestamp, size_t seq);
+                        double timestamp, size_t seq, int filter_num);
 
     double getTimestamp() const { return timestamp_; }
     Eigen::Vector3f getAxis();
@@ -55,6 +63,8 @@ public:
     LidarExtractor lidar_extractor;
     int cylinder_extracted_ = -1;
 
+    void get_pointcloud(LidarPointCloudPtr cloud_out);
+
 private:
     void preproc(LidarPointCloudConstPtr pc_in, LidarPointCloudPtr pc_out);
 
@@ -62,10 +72,10 @@ private:
     Eigen::Vector3f axis;
     double radius = 0;
 
-    const double timestamp_;
-    const size_t seq_corresp_; // corresponding visual image's sequence
+    double timestamp_;
+    size_t seq_corresp_; // corresponding visual image's sequence
 
-    const int point_filter_num = 2;
+    int point_filter_num = 100;
     const double min_dist = 0;
     const double max_dist = 100;
 };

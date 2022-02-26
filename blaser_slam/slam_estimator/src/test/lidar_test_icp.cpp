@@ -33,7 +33,18 @@ int main(int argc, char **argv)
     string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample.pcd";
     string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample_tf.pcd";
 
-
+/*
+    double pose[7] = {1,2,3,4,5,6,7}; // the transformation T such that dst = T * src
+    Eigen::Map<Eigen::Matrix<double, 3, 1>> t(pose);
+    Eigen::Map<Eigen::Quaternion<double>> q(pose + 3);
+    t << 0, 0, 0;
+    q = Eigen::Quaterniond::Identity();
+    for (int i = 0; i < 7; i++){
+        cout << pose[i] << ", ";
+    }
+    cout << endl;
+    return 0;
+*/
     // Read in the cloud data
     /*
     if (pcl::io::loadPCDFile<LidarPoint>(filename_1, *cloud) == -1)
@@ -67,22 +78,21 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    cout << cloud->points.size() << endl;
+    cout << "original cloud size: " << cloud->points.size() << endl;
 
     LidarManager lidar_manager;
-    LidarFramePtr frame1(new LidarFrame(cloud, 0, 0));
-    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 1, 0));
-    cout << "frame1 cylinder: " << frame1->cylinder_extracted_ << endl;
-    cout << "frame2 cylinder: " << frame2->cylinder_extracted_ << endl;
+    LidarFramePtr frame1(new LidarFrame(cloud, 0, 0, 10));
+    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 1, 0, 10));
 
     vector<pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
     Eigen::Affine3f tf;
-    lidar_manager.align(frame2->pc_l_, frame1->pc_l_, corrs, tf);
+
+    frame1->get_pointcloud(cloud);
+    cout << "preprocessed cloud size: " << cloud->points.size() << endl;
+
+    lidar_manager.align_pcl_icp(frame2->pc_l_, frame1->pc_l_, corrs, tf);
 
 
-    lidar_manager.addLidarFrame(frame1);
-    lidar_manager.addLidarFrame(frame2);
-    
     
     // transform back
     LidarPointCloudPtr cloud2(new LidarPointCloud);

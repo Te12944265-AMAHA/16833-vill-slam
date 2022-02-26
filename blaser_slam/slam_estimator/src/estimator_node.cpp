@@ -11,6 +11,10 @@
 #include <dynamic_reconfigure/server.h>
 #include <slam_estimator/BlaserSLAMConfig.h>
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include "utility/pcl_utils.h"
+
 #include "parameters.h"
 #include "utility/visualization.h"
 
@@ -23,6 +27,7 @@ queue<sensor_msgs::ImuConstPtr> imu_buf;
 queue<sensor_msgs::PointCloudConstPtr> feature_buf;
 queue<sensor_msgs::PointCloudConstPtr> relo_buf;
 queue<sensor_msgs::PointCloudConstPtr> laser_buf;
+deque<sensor_msgs::PointCloud2ConstPtr> lidar_buf;
 deque<geometry_msgs::Vector3StampedConstPtr> encoder_buf;
 queue<sensor_msgs::ImageConstPtr> image_buf;
 int sum_of_wait = 0;
@@ -50,6 +55,7 @@ struct DataFrame
   std::vector<sensor_msgs::ImuConstPtr> imu;
   std::vector<sensor_msgs::PointCloudConstPtr> laser;
   double encoder;
+  LidarDataFrame lidar;
 
   DataFrame()
   : feature(nullptr)
@@ -141,6 +147,7 @@ bool discardBufferBeforeTime(queue<T>& buf, double time,
  * Feature: P              X   (P: previous frame, X: current frame)
  * Laser  :   *   *   *   *
  * Encoder:             *  I  *   (interpolate from two frames at feature time)
+ * Lidar  :            *   I   *
  */
 void getMeasurements(std::vector<DataFrame>& data_frames)
 {
@@ -228,6 +235,63 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
 
 
     }
+
+    // add lidar
+    if (USE_LIDAR)
+    {
+      LidarDataFrame lidar_data_frame;
+      // interpolate lidar pose at feature_time
+      while (lidar_buf.size() > 2
+          && lidar_buf[1]->header.stamp.toSec() < feature_time)
+        lidar_buf.pop_front();
+      ROS_DEBUG("lidar buf size: %d", lidar_buf.size());
+      if (lidar_buf.size() == 0) // not enough readings to perform interpolation
+        // TODO handle lidar
+        frame.encoder = std::numeric_limits<double>::quiet_NaN();
+      else if (lidar_buf.size() == 1) // the last bufferred reading's time equals feature time
+        frame.lidar.push_back(lidar_buf.back());
+      else // two left, then we interp
+      {
+        // convert sensor_msgs/PointCloud2 into pcl/PointCloud
+        LidarPointCloudPtr lidar_cloud1(new LidarPointCloud);
+        LidarPointCloudPtr lidar_cloud2(new LidarPointCloud);
+        cloud_msg_to_pcl(lidar_buf[0], lidar_cloud1);
+        cloud_msg_to_pcl(lidar_buf[1], lidar_cloud2);
+        // TODO check arguments
+        LidarFramePtr f1(new LidarFrame(lidar_cloud1, 0, 0, 10)); // cloud is preprocessed during frame creation
+        LidarFramePtr f2(new LidarFrame(lidar_cloud2, 0, 0, 10)); 
+        f1->get_pointcloud(lidar_cloud1);
+        f2->get_pointcloud(lidar_cloud2);
+        std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
+        // f1 = T_1_2 * f2
+        Eigen::Affine3f tf_1_2_f;
+        Eigen::Affine3d tf_1_2;
+        estimator.lidar_manager.align_pcl_icp(lidar_cloud2, lidar_cloud1, corrs, tf_1_2_f);
+        tf_1_2 = tf_1_2_f.cast<double>();
+        // get T_1_cur
+        double f1_time = lidar_buf[0]->header.stamp.toSec();
+        double f2_time = lidar_buf[1]->header.stamp.toSec();
+        double ratio = (feature_time - f1_time) / (f2_time - f1_time);
+        Eigen::Quaterniond q_i = Eigen::Quaterniond::Identity();
+        Eigen::Vector3d t_i(0.0,0.0,0.0);
+        Eigen::Quaterniond q_1_2(tf_1_2.rotation());
+        Eigen::Quaterniond q_1_cur;
+        Eigen::Vector3d t_1_cur;
+        interpTrans(q_i, t_i,q_1_2, tf_1_2.translation(), ratio, q_1_cur, t_1_cur);
+        Eigen::Matrix4d T_1_cur_d;
+        pose2T(t_1_cur, q_1_cur, T_1_cur_d);
+        lidar_data_frame.T_1_cur = T_1_cur_d.cast<float>();
+        // get T_cur_2
+        Eigen::Matrix4d T_cur_2_d = invT(T_1_cur_d) * tf_1_2.matrix();
+        lidar_data_frame.T_cur_2 = T_cur_2_d.cast<float>();
+
+        lidar_data_frame.f1_p = f1;
+        lidar_data_frame.f2_p = f2;
+      }
+      frame.lidar = lidar_data_frame;
+
+    }
+
     data_frames.push_back(frame);
 
     // add raw image
@@ -489,6 +553,13 @@ void encoder_callback(const geometry_msgs::Vector3StampedConstPtr encoder_msg)
 {
   m_buf.lock();
   encoder_buf.push_back(encoder_msg);
+  m_buf.unlock();
+}
+
+void lidar_callback(const sensor_msgs::PointCloud2ConstPtr &lidar_msg)
+{
+  m_buf.lock();
+  lidar_buf.push_back(lidar_msg);
   m_buf.unlock();
 }
 
@@ -763,6 +834,9 @@ int main(int argc, char **argv)
 
   ros::Subscriber sub_encoder = n.subscribe("/encoder/data_filter",
                                             100, encoder_callback);
+
+  ros::Subscriber sub_lidar = n.subscribe("/camera/depth/color/points",
+                                            100, lidar_callback);
 
   ros::Subscriber sub_ori_image = n.subscribe(IMAGE_TOPIC,
                                               100, image_callback);

@@ -13,6 +13,7 @@
 
 #include "lidar_manager.h"
 #include "../utility/geometry_utils.h"
+#include <pcl/registration/icp.h>
 #include <chrono>
 
 #define LIDAR_ITER 10
@@ -24,9 +25,9 @@ LidarManager::LidarManager()
     LidarFactor::sqrt_info = 1e1;
 }
 
-void LidarManager::addLidarFrame(LidarFrameConstPtr frame)
+void LidarManager::addLidarDataFrame(LidarDataFrame frame)
 {
-    lidar_window_.push_back(frame);
+    lidar_window_.insert(std::pair<double, LidarDataFrame>(frame.feature_time, frame));
 }
 
 void LidarManager::discardObsoleteReadings(double time)
@@ -207,14 +208,15 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
                          std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
                          Eigen::Affine3f &tf_out)
 {
-    double pose[SIZE_POSE]; // the transformation T such that dst = T * src
-    double pose0[SIZE_POSE];
-    Eigen::Matrix<double, 3, 1> t;
-    Eigen::Quaternion<double> q;
-    t << 0, 0, 0;
+    double pose[SIZE_POSE] = {0,0,0,0,0,0,1}; // the transformation T such that dst = T * src
+    double pose0[SIZE_POSE] = {0,0,0,0,0,0,1};
+    Eigen::Map<Eigen::Matrix<double, 3, 1>> t(pose);
+    Eigen::Map<Eigen::Quaternion<double>> q(pose + 3);
+    Eigen::Map<Eigen::Matrix<double, 3, 1>> t0(pose0);
+    Eigen::Map<Eigen::Quaternion<double>> q0(pose0 + 3);
     q = Eigen::Quaterniond::Identity();
-    tf2array(t, q, pose);
-    tf2array(t, q, pose0);
+
+    q0 = Eigen::Quaterniond::Identity();
 
     Eigen::Quaterniond q_prev, dq;
     Eigen::Vector3d t_prev, dt;
@@ -235,7 +237,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     cout << "tf out before iters: " << endl;
     cout << tf_out.matrix() << endl;
 
-    Eigen::Affine3f tf = Eigen::Affine3f::Identity();
+    Eigen::Affine3d tf = Eigen::Affine3d::Identity();
 
     auto t_start = chrono::high_resolution_clock::now();
     // attemp to find the correct data association after a few iters
@@ -244,7 +246,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         tmp_corr.clear();
         // data association
         associate(tmp_src, target_cloud, tmp_corr);
-        cout << "iter " << iter << ", #corrs = " << tmp_corr.size() << endl;
+        cout << "Iter " << iter << ", #corrs = " << tmp_corr.size() << endl;
 
         ceres::Problem problem;
         ceres::Solver::Options options;
@@ -255,23 +257,23 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         ceres::Solver::Summary summary;
         // ceres::LossFunction *loss_function = new ceres::HuberLoss(0.1);
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+        //ceres::LocalParameterization* q_local_parameterization =  ceres::QuaternionParameterization();
 
         // we're only optimizing the relative T
         problem.AddParameterBlock(pose, SIZE_POSE, local_parameterization);
         problem.AddParameterBlock(pose0, SIZE_POSE, local_parameterization);
+        //problem.AddParameterBlock(pose, 3);
+        //problem.AddParameterBlock(pose, 4, q_local_parameterization);
+        //problem.AddParameterBlock(pose, 3);
+        //problem.AddParameterBlock(pose, 4, q_local_parameterization);
+
         problem.SetParameterBlockConstant(pose0);
 
         // find transformation that minimizes p2p icp residual
         for (int j = 0; j < tmp_corr.size(); j++)
         {
-            Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>();
-            Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>();
-            if (j % 10000 == 0)
-            {
-                cout << "p1: " << p1 << endl;
-                cout << "p2: " << p2 << endl
-                     << endl;
-            }
+            Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>(); // target
+            Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>(); // source
             auto lidar_factor = LidarFactor::Create(p1, p2);
             problem.AddResidualBlock(lidar_factor, NULL, pose0, pose);
         }
@@ -299,6 +301,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         }
         */
         ceres::Solve(options, &problem, &summary);
+        std::cout << summary.FullReport() << "\n";
 
         cout << "pose: " << endl;
         for (int k = 0; k < SIZE_POSE; k++)
@@ -307,10 +310,13 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         }
         cout << endl;
         // transform src cloud before attempting to associate again
-        array2tf(t, q, pose); // in double
-        tf_out.translation() = t.cast<float>();
-        tf_out.rotate(q.cast<float>());
-        pcl::transformPointCloud(*tmp_src, *tmp_src, tf_out);
+
+        tf.translation() = t;
+        tf.rotate(q);
+        tf_out = tf.cast<float>();
+        LidarPointCloudPtr tmp_src2(new LidarPointCloud());
+        pcl::transformPointCloud(*tmp_src, *tmp_src2, tf_out);
+        *tmp_src = *tmp_src2;
 
         // check if we have converged
         calculate_delta_tf(t, q, t_prev, q_prev, dt, dq);
@@ -319,7 +325,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         cout << "tf out: " << endl;
         cout << tf_out.matrix() << endl;
         cout << "dt norm: " << dt.norm() << "dq norm: " << dq.norm() << endl
-             << endl;
+             << endl << endl << endl;
         if (iter > 0 && dt.norm() < DT_CONVERGE_THRESH && dq.norm() < DQ_CONVERGE_THRESH)
         {
             break;
@@ -333,4 +339,42 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     double t_elapse = chrono::duration<double>(t_end - t_start).count();
     cout << "Time to align (s): " << std::setprecision(9) << t_elapse << endl;
     corrs = tmp_corr;
+}
+
+
+void LidarManager::align_pcl_icp(LidarPointCloudConstPtr source_cloud,
+                         LidarPointCloudConstPtr target_cloud,
+                         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
+                         Eigen::Affine3f &tf_out)
+{
+    cout << "tf out before iters: " << endl;
+    cout << tf_out.matrix() << endl;
+
+    resetKDtree(target_cloud);
+    LidarPointCloudPtr tmp_src(new LidarPointCloud());
+    *tmp_src = *source_cloud;
+    corrs.clear();
+    associate(tmp_src, target_cloud, corrs);
+    cout << "#corrs: " << corrs.size() << endl;
+
+    pcl::IterativeClosestPoint<LidarPoint, LidarPoint> icp;
+    icp.setInputSource(tmp_src);
+    icp.setInputTarget(target_cloud);
+    
+    pcl::PointCloud<LidarPoint> final_cloud;
+    icp.align(final_cloud);
+
+    std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+    icp.getFitnessScore() << std::endl;
+    Eigen::Matrix4f tf = icp.getFinalTransformation();
+    std::cout << tf << std::endl;
+
+    corrs.clear();
+    associate(source_cloud, target_cloud, corrs);
+    cout << "#corrs: " << corrs.size() << endl;
+    
+    tf_out.matrix() = icp.getFinalTransformation();
+
+    cout << "tf out after icp: " << endl;
+    cout << tf_out.matrix() << endl;
 }

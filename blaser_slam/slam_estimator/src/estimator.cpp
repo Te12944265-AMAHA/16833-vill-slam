@@ -1050,10 +1050,10 @@ void Estimator::optimization()
                               local_parameterization);
     if (!ESTIMATE_EXTRINSIC)
     {
-      ROS_DEBUG("fix extinsic param");
+      ROS_DEBUG("fix extrinsic param");
       problem.SetParameterBlockConstant(para_Ex_Pose[i]);
     } else
-      ROS_DEBUG("estimate extinsic param");
+      ROS_DEBUG("estimate extrinsic param");
   }
   if (ESTIMATE_TD)
   {
