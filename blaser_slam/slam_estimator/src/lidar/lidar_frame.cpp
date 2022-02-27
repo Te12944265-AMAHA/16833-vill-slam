@@ -23,9 +23,11 @@ LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t s
     //cylinder_extracted_ = lidar_extractor.findCylinder(pc_l_, pc_cylinder_, cylinder_coeff_);
 }
 
-void LidarFrame::get_pointcloud(LidarPointCloudPtr cloud_out)
+LidarPointCloudPtr LidarFrame::get_pointcloud()
 {
+    LidarPointCloudPtr cloud_out;
     *cloud_out = *pc_l_;
+    return cloud_out;
 }
 
 Eigen::Vector3f LidarFrame::getAxis()

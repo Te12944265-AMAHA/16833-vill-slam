@@ -80,6 +80,17 @@ public:
                std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
                Eigen::Affine3f &tf_out);
 
+    void get_tf_between_data_frames(const LidarDataFrame &df1, 
+                                    const LidarDataFrame &df2,  
+                                    std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f2_df2f1,
+                                    Eigen::Affine3f &tf_out);
+    
+    int get_relative_tf(double t1,
+                           double t2, 
+                           std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
+                           Eigen::Matrix4d &T_prev_2,
+                           Eigen::Matrix4d &T_cur_1);
+
     void resetKDtree(LidarPointCloudConstPtr target_cloud);
 
 private:

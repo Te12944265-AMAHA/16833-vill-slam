@@ -1546,21 +1546,25 @@ void Estimator::optimization()
   {
     for (int i = 0; i < WINDOW_SIZE - 1; i++)
     {
-      // get two frames and associate
-      LidarPointCloudPtr lidar_pc1, lidar_pc2;
-      vector<pair<Eigen::Vector3f, Eigen::Vector3f>> lidar_corrs;
-      Eigen::Affine3f lidar_tf;
-      lidar_manager.align(lidar_pc1, lidar_pc2, lidar_corrs, lidar_tf);
+      // get two frames from lidar window and align
+      double t_prev = Headers[i].stamp.toSec();
+      double t_cur = Headers[i+1].stamp.toSec();
+      std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs_df1f2_df2f1;
+      //TODO but we don't seem to need this tf??
+      Eigen::Matrix4d T_prev_2, T_cur_1;
+      int lidar_res = lidar_manager.get_relative_tf(t_prev, t_cur, corrs_df1f2_df2f1, T_prev_2, T_cur_1);
+      if (lidar_res < 0)
+        continue;
       // create a factor for each point pair
-      for (int j = 0; j < lidar_corrs.size(); j++) {
-        Eigen::Vector3d p1 = lidar_corrs[j].first.cast<double>();
-        Eigen::Vector3d p2 = lidar_corrs[j].second.cast<double>();
-        auto lidar_factor = LidarFactor::Create(p1, p2);
+      for (int j = 0; j < corrs_df1f2_df2f1.size(); j++) {
+        Eigen::Vector3d p_df1_f2 = corrs_df1f2_df2f1[j].first.cast<double>();
+        Eigen::Vector3d p_df2_f1 = corrs_df1f2_df2f1[j].second.cast<double>();
+        auto lidar_factor = LidarFactor::Create(p_df1_f2, p_df2_f1, T_prev_2, T_cur_1);
         problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
       }
       ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %f",
-                i, Headers[i].stamp.toSec(), Headers[i + 1].stamp.toSec(),
-                lidar_corrs.size());
+                i, t_prev, t_cur,
+                corrs_df1f2_df2f1.size());
     }
   }
 

@@ -260,8 +260,8 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         // TODO check arguments
         LidarFramePtr f1(new LidarFrame(lidar_cloud1, 0, 0, 10)); // cloud is preprocessed during frame creation
         LidarFramePtr f2(new LidarFrame(lidar_cloud2, 0, 0, 10)); 
-        f1->get_pointcloud(lidar_cloud1);
-        f2->get_pointcloud(lidar_cloud2);
+        lidar_cloud1 = f1->get_pointcloud();
+        lidar_cloud2 = f2->get_pointcloud();
         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
         // f1 = T_1_2 * f2
         Eigen::Affine3f tf_1_2_f;

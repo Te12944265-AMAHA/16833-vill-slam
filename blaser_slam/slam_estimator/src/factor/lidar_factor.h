@@ -15,16 +15,14 @@ struct LidarFactor
 
     const Eigen::Vector3d p_dst;
     const Eigen::Vector3d p_src;
-/*
-    LidarFactor(double *_relative_q)
-    {
-        relative_q.x() = _relative_q[0];
-        relative_q.y() = _relative_q[1];
-        relative_q.z() = _relative_q[2];
-        relative_q.w() = _relative_q[3];
-    }
-*/
-    LidarFactor(const Eigen::Vector3d &dst, const Eigen::Vector3d &src) : p_dst(dst), p_src(src) {}
+    Eigen::Quaterniond dst_premult, src_premult;
+
+
+    LidarFactor(const Eigen::Vector3d &dst, 
+                const Eigen::Vector3d &src, 
+                Eigen::Matrix4d &dst_premult_,
+                Eigen::Matrix4d &src_premult_) 
+    : p_dst(dst), p_src(src), dst_premult(dst_premult_), src_premult(src_premult_) {}
 
     template <typename T>
     bool operator()(const T *const pose1, const T *const pose2, T* residuals) const {
@@ -42,9 +40,15 @@ struct LidarFactor
         Eigen::Quaternion<T> qDst = Eigen::Map<const Eigen::Quaternion<T> >(pose2+3);
 
         // Rotate the point using Eigen rotations
-        Eigen::Matrix<T,3,1> p = q * src;
+
+        Eigen::Matrix<T,3,1> p = src_premult.block<3,3>(0,0) * src;
+        p += src_premult.block<3,1>(0,3);
+        p = q * p;
         p += t;
-        Eigen::Matrix<T,3,1> p2 = qDst * dst;
+
+        Eigen::Matrix<T,3,1> p2 = dst_premult.block<3,3>(0,0) * dst;
+        p2 += dst_premult.block<3,1>(0,3);
+        p2 = qDst * p2;
         p2 += tDst;
 
         // The error is the difference between the predicted and observed position.
@@ -54,8 +58,12 @@ struct LidarFactor
         return true;
     }
 
-    static ceres::CostFunction* Create(const Eigen::Vector3d& dst, const Eigen::Vector3d& src) {
-        return (new ceres::AutoDiffCostFunction<LidarFactor, 1, 7, 7>(new LidarFactor(dst, src)));
+    static ceres::CostFunction* Create(const Eigen::Vector3d& dst, 
+                                       const Eigen::Vector3d& src, 
+                                       Eigen::Matrix4d &dst_premult_,
+                                       Eigen::Matrix4d &src_premult_) 
+    {
+        return (new ceres::AutoDiffCostFunction<LidarFactor, 1, 7, 7>(new LidarFactor(dst, src, dst_premult_, src_premult_)));
     }
 
 

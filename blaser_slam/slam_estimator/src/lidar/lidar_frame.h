@@ -63,7 +63,7 @@ public:
     LidarExtractor lidar_extractor;
     int cylinder_extracted_ = -1;
 
-    void get_pointcloud(LidarPointCloudPtr cloud_out);
+    LidarPointCloudPtr get_pointcloud();
 
 private:
     void preproc(LidarPointCloudConstPtr pc_in, LidarPointCloudPtr pc_out);

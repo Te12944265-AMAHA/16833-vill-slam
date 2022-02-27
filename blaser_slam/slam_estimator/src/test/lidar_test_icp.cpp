@@ -87,7 +87,7 @@ int main(int argc, char **argv)
     vector<pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
     Eigen::Affine3f tf;
 
-    frame1->get_pointcloud(cloud);
+    cloud = frame1->get_pointcloud();
     cout << "preprocessed cloud size: " << cloud->points.size() << endl;
 
     lidar_manager.align_pcl_icp(frame2->pc_l_, frame1->pc_l_, corrs, tf);
