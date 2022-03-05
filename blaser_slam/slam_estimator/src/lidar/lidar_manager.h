@@ -50,18 +50,22 @@
 typedef struct lidar_data_frame
 {
     double feature_time;
+    bool use_interpolate;
     LidarFramePtr f1_p;
     LidarFramePtr f2_p;
     Eigen::Matrix4f T_1_cur;
     Eigen::Matrix4f T_cur_2;
 } LidarDataFrame;
 
+typedef std::shared_ptr<LidarDataFrame> LidarDataFramePtr;
+typedef const std::shared_ptr<LidarDataFrame> LidarDataFrameConstPtr;
+
 class LidarManager
 {
 public:
     LidarManager();
 
-    void addLidarDataFrame(LidarDataFrame frame);
+    void addLidarDataFrame(LidarDataFrameConstPtr frame, double stamp);
     void discardObsoleteReadings(double time);
 
     int getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2, Eigen::Matrix4f &T);
@@ -80,8 +84,8 @@ public:
                std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
                Eigen::Affine3f &tf_out);
 
-    void get_tf_between_data_frames(const LidarDataFrame &df1, 
-                                    const LidarDataFrame &df2,  
+    void get_tf_between_data_frames(LidarDataFrameConstPtr df1, 
+                                    LidarDataFrameConstPtr df2,  
                                     std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f2_df2f1,
                                     Eigen::Affine3f &tf_out);
     
@@ -95,7 +99,7 @@ public:
 
 private:
     // maps feature time to data frame
-    std::map<double, LidarDataFrame> lidar_window_;
+    std::map<double, LidarDataFrameConstPtr> lidar_window_;
 
     std::string lidar_topic;
 

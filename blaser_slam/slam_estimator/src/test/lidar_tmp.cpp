@@ -96,7 +96,7 @@ int main(int argc, char **argv)
             outimg.at<uchar>(239 - y_coord , x_coord) = 0;
         }
     }
-    cv::imwrite("./src/blaser_mapping/wean_map_grid.jpg", outimg);
+    cv::imwrite("wean_map_grid.jpg", outimg);
     cv::imshow("Gray scale", outimg); 
     cv::waitKey(0);
 

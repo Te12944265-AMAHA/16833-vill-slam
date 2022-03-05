@@ -81,8 +81,8 @@ int main(int argc, char **argv)
     cout << "original cloud size: " << cloud->points.size() << endl;
 
     LidarManager lidar_manager;
-    LidarFramePtr frame1(new LidarFrame(cloud, 0, 0, 10));
-    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 1, 0, 10));
+    LidarFramePtr frame1(new LidarFrame(cloud, 10));
+    LidarFramePtr frame2(new LidarFrame(transformed_cloud, 10));
 
     vector<pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
     Eigen::Affine3f tf;

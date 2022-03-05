@@ -55,7 +55,7 @@ struct DataFrame
   std::vector<sensor_msgs::ImuConstPtr> imu;
   std::vector<sensor_msgs::PointCloudConstPtr> laser;
   double encoder;
-  LidarDataFrame lidar;
+  LidarDataFramePtr lidar;
 
   DataFrame()
   : feature(nullptr)
@@ -239,27 +239,46 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
     // add lidar
     if (USE_LIDAR)
     {
-      LidarDataFrame lidar_data_frame;
+      LidarDataFramePtr lidar_data_frame_ptr (new LidarDataFrame);
       // interpolate lidar pose at feature_time
       while (lidar_buf.size() > 2
           && lidar_buf[1]->header.stamp.toSec() < feature_time)
         lidar_buf.pop_front();
       ROS_DEBUG("lidar buf size: %d", lidar_buf.size());
-      if (lidar_buf.size() == 0) // not enough readings to perform interpolation
-        // TODO handle lidar
-        frame.encoder = std::numeric_limits<double>::quiet_NaN();
+      if (lidar_buf.size() == 0)
+      {
+        lidar_data_frame_ptr = nullptr;
+      }
       else if (lidar_buf.size() == 1) // the last bufferred reading's time equals feature time
-        frame.lidar.push_back(lidar_buf.back());
+      {
+        LidarPointCloudPtr lidar_cloud1(new LidarPointCloud);
+        cloud_msg_to_pcl(lidar_buf[0], lidar_cloud1);
+        // subsample by 10
+        LidarFramePtr f1(new LidarFrame(lidar_cloud1, 10));
+        lidar_data_frame_ptr->f1_p = f1;
+        lidar_data_frame_ptr->feature_time = feature_time;
+        lidar_data_frame_ptr->use_interpolate = false;
+        lidar_data_frame_ptr->f1_p = nullptr;
+        Eigen::Matrix4d T_i;
+        Eigen::Vector3d t(0,0,0);
+        Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+        pose2T(t, q, T_i);
+        lidar_data_frame_ptr->T_1_cur = T_i.cast<float>();
+        lidar_data_frame_ptr->T_cur_2 = T_i.cast<float>();
+      }
       else // two left, then we interp
       {
+        //ROS_DEBUG("entering else: good");
+        lidar_data_frame_ptr->use_interpolate = true;
+        lidar_data_frame_ptr->feature_time = feature_time;
         // convert sensor_msgs/PointCloud2 into pcl/PointCloud
         LidarPointCloudPtr lidar_cloud1(new LidarPointCloud);
         LidarPointCloudPtr lidar_cloud2(new LidarPointCloud);
         cloud_msg_to_pcl(lidar_buf[0], lidar_cloud1);
         cloud_msg_to_pcl(lidar_buf[1], lidar_cloud2);
-        // TODO check arguments
-        LidarFramePtr f1(new LidarFrame(lidar_cloud1, 0, 0, 10)); // cloud is preprocessed during frame creation
-        LidarFramePtr f2(new LidarFrame(lidar_cloud2, 0, 0, 10)); 
+        //ROS_DEBUG("done msg to pcl conversion");
+        LidarFramePtr f1(new LidarFrame(lidar_cloud1, 10)); // cloud is preprocessed during frame creation
+        LidarFramePtr f2(new LidarFrame(lidar_cloud2, 10)); 
         lidar_cloud1 = f1->get_pointcloud();
         lidar_cloud2 = f2->get_pointcloud();
         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
@@ -280,16 +299,16 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         interpTrans(q_i, t_i,q_1_2, tf_1_2.translation(), ratio, q_1_cur, t_1_cur);
         Eigen::Matrix4d T_1_cur_d;
         pose2T(t_1_cur, q_1_cur, T_1_cur_d);
-        lidar_data_frame.T_1_cur = T_1_cur_d.cast<float>();
+        lidar_data_frame_ptr->T_1_cur = T_1_cur_d.cast<float>();
         // get T_cur_2
         Eigen::Matrix4d T_cur_2_d = invT(T_1_cur_d) * tf_1_2.matrix();
-        lidar_data_frame.T_cur_2 = T_cur_2_d.cast<float>();
+        lidar_data_frame_ptr->T_cur_2 = T_cur_2_d.cast<float>();
 
-        lidar_data_frame.f1_p = f1;
-        lidar_data_frame.f2_p = f2;
+        lidar_data_frame_ptr->f1_p = f1;
+        lidar_data_frame_ptr->f2_p = f2;
       }
-      frame.lidar = lidar_data_frame;
-
+      frame.lidar = lidar_data_frame_ptr;
+      //ROS_DEBUG("done adding lidar to data frame");
     }
 
     data_frames.push_back(frame);
@@ -653,6 +672,10 @@ void process()
       //! encoder data
       estimator.e_manager.addReading(data_frame.encoder,
                                      data_frame.feature->header.stamp.toSec());
+
+      //! add lidar data frames to lidar manager
+      estimator.lidar_manager.addLidarDataFrame(data_frame.lidar,
+                                                data_frame.feature->header.stamp.toSec());
 
       //! 2.1 pre-process IMU data
       auto img_msg = data_frame.feature;

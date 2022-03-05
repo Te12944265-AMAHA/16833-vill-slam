@@ -1550,7 +1550,7 @@ void Estimator::optimization()
       double t_prev = Headers[i].stamp.toSec();
       double t_cur = Headers[i+1].stamp.toSec();
       std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs_df1f2_df2f1;
-      //TODO but we don't seem to need this tf??
+
       Eigen::Matrix4d T_prev_2, T_cur_1;
       int lidar_res = lidar_manager.get_relative_tf(t_prev, t_cur, corrs_df1f2_df2f1, T_prev_2, T_cur_1);
       if (lidar_res < 0)

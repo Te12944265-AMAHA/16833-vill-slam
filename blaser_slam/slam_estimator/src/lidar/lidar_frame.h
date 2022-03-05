@@ -29,13 +29,9 @@ public:
         axis(0) = 0;
         axis(1) = 0;
         axis(2) = 0;
-        timestamp_ = 0.0;
-        seq_corresp_ = 0;
     };
-    explicit LidarFrame(LidarPointCloudConstPtr _pc_l,
-                        double timestamp, size_t seq, int filter_num);
+    explicit LidarFrame(LidarPointCloudConstPtr _pc_l, int filter_num);
 
-    double getTimestamp() const { return timestamp_; }
     Eigen::Vector3f getAxis();
     void setAxis(Eigen::Vector3f vec);
 
@@ -72,12 +68,10 @@ private:
     Eigen::Vector3f axis;
     double radius = 0;
 
-    double timestamp_;
-    size_t seq_corresp_; // corresponding visual image's sequence
 
     int point_filter_num = 100;
-    const double min_dist = 0;
-    const double max_dist = 100;
+    const double min_dist = 0.5;
+    const double max_dist = 6;
 };
 
 typedef std::shared_ptr<LidarFrame> LidarFramePtr;

@@ -25,15 +25,15 @@ LidarManager::LidarManager()
     LidarFactor::sqrt_info = 1e1;
 }
 
-void LidarManager::addLidarDataFrame(LidarDataFrame frame)
+void LidarManager::addLidarDataFrame(LidarDataFrameConstPtr frame, double stamp)
 {
-    lidar_window_.insert(std::pair<double, LidarDataFrame>(frame.feature_time, frame));
+    lidar_window_.insert(std::pair<double, LidarDataFrameConstPtr>(stamp, frame));
 }
 
 void LidarManager::discardObsoleteReadings(double time)
 {
     auto it = lidar_window_.begin();
-    while (it != lidar_window_.end() && (*it)->getTimestamp() < time)
+    while (it != lidar_window_.end() && it->first < time)
     {
         it = lidar_window_.erase(it);
     }
@@ -121,16 +121,16 @@ int LidarManager::getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2,
 // Lidar cylinder factor: currently not in use
 int LidarManager::getRelativeTf(double t1, double t2, Eigen::Matrix4f &T)
 {
-    // TODO
-    // if (lidar_window_.count(t2) == 0 || lidar_window_.count(t1) == 0)
+
     if (0)
     {
         ROS_WARN("Lidar factor invalid value, should only happen at beginning??");
         return -1;
     }
-    LidarFramePtr frame1 = lidar_window_[t1];
-    LidarFramePtr frame2 = lidar_window_[t2];
-    return getRelativeTf(frame1, frame2, T);
+    LidarDataFramePtr frame1 = lidar_window_[t1];
+    LidarDataFramePtr frame2 = lidar_window_[t2];
+    // no interpolation if this factor is used
+    return getRelativeTf(frame1->f1_p, frame2->f1_p, T);
 }
 
 void LidarManager::resetKDtree(LidarPointCloudConstPtr target_cloud)
@@ -223,6 +223,9 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
     Eigen::Vector3d t_prev, dt;
     std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> tmp_corr;
 
+    Eigen::Matrix4d T_i;
+    pose2T(t.cast<double>(), q.cast<double>(), T_i);
+
     LidarPointCloudPtr tmp_src(new LidarPointCloud());
     *tmp_src = *source_cloud;
 
@@ -275,7 +278,7 @@ void LidarManager::align(LidarPointCloudConstPtr source_cloud,
         {
             Eigen::Vector3d p1 = tmp_corr[j].first.cast<double>();  // target
             Eigen::Vector3d p2 = tmp_corr[j].second.cast<double>(); // source
-            auto lidar_factor = LidarFactor::Create(p1, p2);
+            auto lidar_factor = LidarFactor::Create(p1, p2, T_i, T_i);
             problem.AddResidualBlock(lidar_factor, NULL, pose0, pose);
         }
         /*
@@ -352,26 +355,32 @@ void LidarManager::align_pcl_icp(LidarPointCloudConstPtr source_cloud,
     cout << "tf out before iters: " << endl;
     cout << tf_out.matrix() << endl;
 
-    resetKDtree(target_cloud);
-    LidarPointCloudPtr tmp_src(new LidarPointCloud());
-    *tmp_src = *source_cloud;
     corrs.clear();
-    associate(tmp_src, target_cloud, corrs);
-    cout << "#corrs: " << corrs.size() << endl;
 
     pcl::IterativeClosestPoint<LidarPoint, LidarPoint> icp;
-    icp.setInputSource(tmp_src);
+    icp.setInputSource(source_cloud);
     icp.setInputTarget(target_cloud);
 
     LidarPointCloudPtr final_cloud(new LidarPointCloud());
     icp.align(*final_cloud);
 
+    pcl::CorrespondencesPtr corr_indices = icp.correspondences_;
+    for (size_t i = 0; i < corr_indices->size(); i++)
+    {
+        pcl::Correspondence cor = (*corr_indices)[i];
+        // corrs: <point_from_target, point_from_source>
+        LidarPoint p1 = (*target_cloud)[cor.index_match];
+        LidarPoint p2 = (*source_cloud)[cor.index_query];
+        Eigen::Vector3f p_target(p1.x, p1.y, p1.z);
+        Eigen::Vector3f p_source(p2.x, p2.y, p2.z);
+        corrs.push_back(make_pair(p_target, p_source));
+
+    }
+
     std::cout << "has converged:" << icp.hasConverged() << " score: " << icp.getFitnessScore() << std::endl;
     Eigen::Matrix4f tf = icp.getFinalTransformation();
     std::cout << tf << std::endl;
 
-    corrs.clear();
-    associate(source_cloud, target_cloud, corrs);
     cout << "#corrs: " << corrs.size() << endl;
 
     tf_out.matrix() = icp.getFinalTransformation();
@@ -385,14 +394,30 @@ void LidarManager::align_pcl_icp(LidarPointCloudConstPtr source_cloud,
 // df1_prev and df2_cur are interpolated frames
 // corrs are between df1_f2 and df2_f1  
 // tf_1_2 are between df1_prev and df2_cur
-void LidarManager::get_tf_between_data_frames(const LidarDataFrame &df1,
-                                              const LidarDataFrame &df2,
+void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
+                                              LidarDataFrameConstPtr df2,
                                               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f2_df2f1,
                                               Eigen::Affine3f &tf_1_2)
 {
     Eigen::Affine3f T_2_3, T_prev_cur;
-    align_pcl_icp(df2.f1_p->get_pointcloud(), df1.f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
-    T_prev_cur = df1.T_cur_2 * T_2_3.matrix() * df2.T_1_cur;
+    if (df1->use_interpolate && df2->use_interpolate)
+    {
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+    }
+    else if (df1->use_interpolate && !(df2->use_interpolate))
+    {
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+    }
+    else if (!(df1->use_interpolate) && df2->use_interpolate)
+    {
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+    }
+    else
+    {
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+    }
+    align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+    T_prev_cur = df1->T_cur_2 * T_2_3.matrix() * df2->T_1_cur;
     tf_1_2 = T_prev_cur;
 }
 
@@ -404,17 +429,17 @@ int LidarManager::get_relative_tf(double t1,
                                    Eigen::Matrix4d &T_prev_2,
                                    Eigen::Matrix4d &T_cur_1)
 {
-    // TODO handle case lidar reading missing
-    if (lidar_window_.count(t2) == 0 || lidar_window_.count(t1) == 0 || isnan(readings_[t2]) || isnan(readings_[t1]))
+    if (lidar_window_.count(t2) == 0 || lidar_window_.count(t1) == 0 || lidar_window_[t1] == nullptr || lidar_window_[t2] == nullptr)
     {
         ROS_WARN("Lidar factor invalid value, TODO when should this happen?");
         return -1;
     }
     Eigen::Affine3f tf_1_2;
-    LidarDataFrame df1 = lidar_window_[t1];
-    LidarDataFrame df2 = lidar_window_[t2];
+    LidarDataFramePtr df1 = lidar_window_[t1];
+    LidarDataFramePtr df2 = lidar_window_[t2];
+    // this is mainly to get the correspondences
     get_tf_between_data_frames(df1, df2, corrs_df1f2_df2f1, tf_1_2);
-    T_prev_2 = df1.T_cur_2.cast<double>();
-    T_cur_1 = invT(df2.T_1_cur.cast<double>());
+    T_prev_2 = df1->T_cur_2.cast<double>();
+    T_cur_1 = invT(df2->T_1_cur.cast<double>());
     return 0;
 }

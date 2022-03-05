@@ -15,7 +15,7 @@ struct LidarFactor
 
     const Eigen::Vector3d p_dst;
     const Eigen::Vector3d p_src;
-    Eigen::Quaterniond dst_premult, src_premult;
+    Eigen::Matrix4d dst_premult, src_premult;
 
 
     LidarFactor(const Eigen::Vector3d &dst, 

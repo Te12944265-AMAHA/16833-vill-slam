@@ -106,6 +106,7 @@ add_executable(slam_estimator
   src/lidar/lidar_feature_extraction.cpp 
   src/lidar/lidar_frame.cpp
   src/lidar/lidar_manager.cpp
+  src/utility/pcl_utils.cpp
 
   src/factor/residual_stat_iter_cb.cpp
   )

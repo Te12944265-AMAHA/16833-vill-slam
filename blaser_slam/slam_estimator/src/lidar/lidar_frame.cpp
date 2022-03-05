@@ -10,9 +10,9 @@
 
 #include "lidar_frame.h"
 
-LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, double timestamp, size_t seq, int filter_num)
-    : timestamp_(timestamp), seq_corresp_(seq), pc_l_(new LidarPointCloud),
-      pc_cylinder_(new LidarPointCloud), pc_edge_(new LidarPointCloud), pc_surf_(new LidarPointCloud), point_filter_num(filter_num)
+LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, int filter_num)
+    : pc_l_(new LidarPointCloud), point_filter_num(filter_num),
+      pc_cylinder_(new LidarPointCloud), pc_edge_(new LidarPointCloud), pc_surf_(new LidarPointCloud)
 {
     axis(0) = 0;
     axis(1) = 0;
