@@ -14,7 +14,7 @@
 #include "lidar_manager.h"
 #include "../utility/geometry_utils.h"
 #include <pcl/registration/icp.h>
-#include <chrono>
+#include "../utility/tic_toc.h"
 
 #define LIDAR_ITER 10
 #define DT_CONVERGE_THRESH 1e-5
@@ -37,7 +37,26 @@ void LidarManager::discardObsoleteReadings(double time)
     {
         it = lidar_window_.erase(it);
     }
+    ROS_DEBUG("remaining frames in lidar window: %d", lidar_window_.size());
 }
+
+
+int LidarManager::get_lidar_frame(const double time, LidarDataFramePtr frame_out) const
+{
+    auto itr = lidar_window_.find(time);
+    if (itr != lidar_window_.end())
+    {
+        if (itr->second == nullptr)
+            return -2;
+        else
+        {
+            *frame_out = *(itr->second);
+            return 0;
+        }
+    }
+    return -1;
+}
+
 
 void LidarManager::findVectorRot(Eigen::Vector3f &vec1, Eigen::Vector3f &vec2, Eigen::Quaternionf &q_out)
 {
@@ -352,9 +371,7 @@ void LidarManager::align_pcl_icp(LidarPointCloudConstPtr source_cloud,
                                  std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs,
                                  Eigen::Affine3f &tf_out)
 {
-    cout << "tf out before iters: " << endl;
-    cout << tf_out.matrix() << endl;
-
+    TicToc tic_toc;
     corrs.clear();
 
     pcl::IterativeClosestPoint<LidarPoint, LidarPoint> icp;
@@ -378,15 +395,14 @@ void LidarManager::align_pcl_icp(LidarPointCloudConstPtr source_cloud,
     }
 
     std::cout << "has converged:" << icp.hasConverged() << " score: " << icp.getFitnessScore() << std::endl;
-    Eigen::Matrix4f tf = icp.getFinalTransformation();
-    std::cout << tf << std::endl;
-
     cout << "#corrs: " << corrs.size() << endl;
 
     tf_out.matrix() = icp.getFinalTransformation();
 
     cout << "tf out after icp: " << endl;
     cout << tf_out.matrix() << endl;
+    double elapsed_ms = tic_toc.toc();
+    ROS_INFO("align_pcl_icp took %f ms", elapsed_ms);
 }
 
 
@@ -399,6 +415,7 @@ void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
                                               std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f2_df2f1,
                                               Eigen::Affine3f &tf_1_2)
 {
+    ROS_DEBUG("entering get_tf_between_data_frames");
     Eigen::Affine3f T_2_3, T_prev_cur;
     if (df1->use_interpolate && df2->use_interpolate)
     {
@@ -416,9 +433,9 @@ void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
     {
         align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
     }
-    align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
     T_prev_cur = df1->T_cur_2 * T_2_3.matrix() * df2->T_1_cur;
     tf_1_2 = T_prev_cur;
+    ROS_DEBUG("done get_tf_between_data_frames");
 }
 
 
@@ -429,6 +446,7 @@ int LidarManager::get_relative_tf(double t1,
                                    Eigen::Matrix4d &T_prev_2,
                                    Eigen::Matrix4d &T_cur_1)
 {
+    ROS_DEBUG("entering get_relative_tf");
     if (lidar_window_.count(t2) == 0 || lidar_window_.count(t1) == 0 || lidar_window_[t1] == nullptr || lidar_window_[t2] == nullptr)
     {
         ROS_WARN("Lidar factor invalid value, TODO when should this happen?");
@@ -441,5 +459,6 @@ int LidarManager::get_relative_tf(double t1,
     get_tf_between_data_frames(df1, df2, corrs_df1f2_df2f1, tf_1_2);
     T_prev_2 = df1->T_cur_2.cast<double>();
     T_cur_1 = invT(df2->T_1_cur.cast<double>());
+    ROS_DEBUG("done get_relative_tf");
     return 0;
 }

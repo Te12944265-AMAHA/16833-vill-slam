@@ -64,8 +64,11 @@ class LidarManager
 {
 public:
     LidarManager();
-
+    int getWindowSize() { return lidar_window_.size(); }
     void addLidarDataFrame(LidarDataFrameConstPtr frame, double stamp);
+
+    int get_lidar_frame(const double time, LidarDataFramePtr frame_out) const;
+
     void discardObsoleteReadings(double time);
 
     int getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2, Eigen::Matrix4f &T);

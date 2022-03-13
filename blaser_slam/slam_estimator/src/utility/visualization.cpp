@@ -18,6 +18,8 @@ ros::Publisher pub_extrinsic;
 ros::Publisher pub_vis_f_on_im;
 ros::Publisher pub_vis_f_on_laser;
 
+ros::Publisher pub_lidar_frame;
+
 CameraPoseVisualization cameraposevisual(0, 1, 0, 1);
 CameraPoseVisualization keyframebasevisual(0.0, 0.0, 1.0, 1.0);
 static double sum_of_path = 0;
@@ -48,6 +50,8 @@ void registerPub(ros::NodeHandle &n)
                                                            1000);
 
   pub_vis_f_on_im = n.advertise<sensor_msgs::Image>("f_on_im", 10);
+
+  pub_lidar_frame = n.advertise<sensor_msgs::PointCloud2>("lidar/cloud_processed", 100);
 
   cameraposevisual.setScale(CAM_VIS_SCALE);
   cameraposevisual.setLineWidth(CAM_VIS_LINE_WIDTH);
@@ -561,3 +565,30 @@ void pubVisFOnIm(sensor_msgs::ImageConstPtr im_ptr)
   pub_vis_f_on_im.publish(im_ptr);
 }
 
+void pubLidarFrame(const Estimator &estimator, const std_msgs::Header &header)
+{
+  sensor_msgs::PointCloud2Ptr lidar_msg (new sensor_msgs::PointCloud2);
+  LidarDataFramePtr ldf (new LidarDataFrame);
+  // look up lidar frame from window using header stamp
+  int res = estimator.lidar_manager.get_lidar_frame(header.stamp.toSec(), ldf);
+  if (res < 0)
+    return;
+
+  // transform cloud into world frame
+  int i = WINDOW_SIZE - 2;
+  Vector3d P = estimator.Ps[i];
+  Quaterniond R = Quaterniond(estimator.Rs[i]);
+  Matrix4d T_w_1;
+  pose2T(P, R, T_w_1);
+  // TODO calib between lidar frame and robot body frame
+  Matrix4f T_w_cur = T_w_1.cast<float>() * ldf->T_1_cur;
+  Eigen::Affine3f tf_w_cur = Eigen::Affine3f::Identity();
+  tf_w_cur.matrix() = T_w_cur;
+
+  LidarPointCloudPtr cloud_w (new LidarPointCloud);
+  pcl::transformPointCloud(*(ldf->f1_p->get_pointcloud()), *cloud_w, tf_w_cur);
+
+  pcl_to_cloud_msg(cloud_w, lidar_msg);
+  lidar_msg->header.frame_id = "world";
+  pub_lidar_frame.publish(lidar_msg);
+}

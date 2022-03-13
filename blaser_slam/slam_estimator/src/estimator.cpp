@@ -1544,8 +1544,12 @@ void Estimator::optimization()
   // Lidar
   if (USE_LIDAR)
   {
+    ROS_DEBUG("entering USE_LIDAR block in estimator");
+    ROS_DEBUG("number of frames in lidar window: %d", lidar_manager.getWindowSize());
+    ROS_DEBUG("WINDOW SIZE: %d", WINDOW_SIZE);
     for (int i = 0; i < WINDOW_SIZE - 1; i++)
     {
+      ROS_DEBUG("at frame %d in window", i);
       // get two frames from lidar window and align
       double t_prev = Headers[i].stamp.toSec();
       double t_cur = Headers[i+1].stamp.toSec();
@@ -1553,6 +1557,7 @@ void Estimator::optimization()
 
       Eigen::Matrix4d T_prev_2, T_cur_1;
       int lidar_res = lidar_manager.get_relative_tf(t_prev, t_cur, corrs_df1f2_df2f1, T_prev_2, T_cur_1);
+      ROS_DEBUG("result = %d", lidar_res);
       if (lidar_res < 0)
         continue;
       // create a factor for each point pair
@@ -1562,7 +1567,7 @@ void Estimator::optimization()
         auto lidar_factor = LidarFactor::Create(p_df1_f2, p_df2_f1, T_prev_2, T_cur_1);
         problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
       }
-      ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %f",
+      ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %d",
                 i, t_prev, t_cur,
                 corrs_df1f2_df2f1.size());
     }
@@ -2053,7 +2058,9 @@ void Estimator::slideWindow()
   if (USE_LIDAR)
   {
     // discard all Lidar readings prior to the first keyframe in window
-    e_manager.discardObsoleteReadings(Headers[0].stamp.toSec());
+    ROS_DEBUG("discarding old lidar readings");
+    lidar_manager.discardObsoleteReadings(Headers[0].stamp.toSec());
+    ROS_DEBUG("done discarding old lidar readings");
   }
 
 }

@@ -251,6 +251,7 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
       }
       else if (lidar_buf.size() == 1) // the last bufferred reading's time equals feature time
       {
+        ROS_DEBUG("entering else if");
         LidarPointCloudPtr lidar_cloud1(new LidarPointCloud);
         cloud_msg_to_pcl(lidar_buf[0], lidar_cloud1);
         // subsample by 10
@@ -258,17 +259,18 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         lidar_data_frame_ptr->f1_p = f1;
         lidar_data_frame_ptr->feature_time = feature_time;
         lidar_data_frame_ptr->use_interpolate = false;
-        lidar_data_frame_ptr->f1_p = nullptr;
+        lidar_data_frame_ptr->f2_p = nullptr;
         Eigen::Matrix4d T_i;
         Eigen::Vector3d t(0,0,0);
         Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
         pose2T(t, q, T_i);
         lidar_data_frame_ptr->T_1_cur = T_i.cast<float>();
         lidar_data_frame_ptr->T_cur_2 = T_i.cast<float>();
+        ROS_DEBUG("done else if");
       }
       else // two left, then we interp
       {
-        //ROS_DEBUG("entering else: good");
+        ROS_DEBUG("entering else");
         lidar_data_frame_ptr->use_interpolate = true;
         lidar_data_frame_ptr->feature_time = feature_time;
         // convert sensor_msgs/PointCloud2 into pcl/PointCloud
@@ -281,11 +283,13 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         LidarFramePtr f2(new LidarFrame(lidar_cloud2, 10)); 
         lidar_cloud1 = f1->get_pointcloud();
         lidar_cloud2 = f2->get_pointcloud();
+        //ROS_DEBUG("got point clouds");
         std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs;
         // f1 = T_1_2 * f2
         Eigen::Affine3f tf_1_2_f;
         Eigen::Affine3d tf_1_2;
         estimator.lidar_manager.align_pcl_icp(lidar_cloud2, lidar_cloud1, corrs, tf_1_2_f);
+        //ROS_DEBUG("aligned point clouds");
         tf_1_2 = tf_1_2_f.cast<double>();
         // get T_1_cur
         double f1_time = lidar_buf[0]->header.stamp.toSec();
@@ -308,7 +312,7 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         lidar_data_frame_ptr->f2_p = f2;
       }
       frame.lidar = lidar_data_frame_ptr;
-      //ROS_DEBUG("done adding lidar to data frame");
+      ROS_DEBUG("done adding lidar to data frame");
     }
 
     data_frames.push_back(frame);
@@ -673,9 +677,10 @@ void process()
       estimator.e_manager.addReading(data_frame.encoder,
                                      data_frame.feature->header.stamp.toSec());
 
-      //! add lidar data frames to lidar manager
+      //! add lidar data frame to lidar manager
       estimator.lidar_manager.addLidarDataFrame(data_frame.lidar,
                                                 data_frame.feature->header.stamp.toSec());
+      //ROS_DEBUG("added lidar data frame to lidar manager");
 
       //! 2.1 pre-process IMU data
       auto img_msg = data_frame.feature;
@@ -801,6 +806,7 @@ void process()
       pubKeyPoses(estimator, header);
       pubCameraPose(estimator, header);
       pubPointCloud(estimator, header, false);
+      pubLidarFrame(estimator, header);
       pubTF(estimator, header);
       pubKeyframe(estimator);
       if (relo_msg != NULL)

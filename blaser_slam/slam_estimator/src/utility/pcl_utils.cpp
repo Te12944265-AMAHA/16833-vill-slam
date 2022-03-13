@@ -16,3 +16,8 @@ void cloud_msg_to_pcl(sensor_msgs::PointCloud2ConstPtr msg_in, LidarPointCloudPt
     pcl_conversions::toPCL(*msg_in, *pcl_pc2);
     pcl::fromPCLPointCloud2(*pcl_pc2, *pcl_p_out);
 }
+
+void pcl_to_cloud_msg(LidarPointCloudConstPtr pcl_in, sensor_msgs::PointCloud2Ptr msg_out)
+{
+    pcl::toROSMsg(*pcl_in, *msg_out); 
+}

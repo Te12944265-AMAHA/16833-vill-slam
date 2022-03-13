@@ -25,7 +25,7 @@ LidarFrame::LidarFrame(LidarPointCloudConstPtr _pc_l, int filter_num)
 
 LidarPointCloudPtr LidarFrame::get_pointcloud()
 {
-    LidarPointCloudPtr cloud_out;
+    LidarPointCloudPtr cloud_out = boost::make_shared<LidarPointCloud>();
     *cloud_out = *pc_l_;
     return cloud_out;
 }

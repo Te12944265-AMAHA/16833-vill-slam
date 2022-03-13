@@ -22,6 +22,7 @@
 
 void cloud_msg_to_pcl(sensor_msgs::PointCloud2ConstPtr msg_in, LidarPointCloudPtr pcl_p_out);
 
+void pcl_to_cloud_msg(LidarPointCloudConstPtr pcl_in, sensor_msgs::PointCloud2Ptr msg_out);
 
 
 #endif /* PCD_UTILS_H_ */

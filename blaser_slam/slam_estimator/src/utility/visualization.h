@@ -18,6 +18,8 @@
 #include "../parameters.h"
 #include "../estimator.h"
 #include <fstream>
+#include "../lidar/lidar_frame.h"
+#include "pcl_utils.h"
 
 extern ros::Publisher pub_odometry;
 extern ros::Publisher pub_path, pub_pose;
@@ -30,6 +32,8 @@ extern ros::Publisher pub_pose_graph;
 extern int IMAGE_ROW, IMAGE_COL;
 extern ros::Publisher pub_vis_f_on_im;
 extern ros::Publisher pub_vis_f_on_laser;
+
+extern ros::Publisher pub_lidar_frame;
 
 void registerPub(ros::NodeHandle &n);
 
@@ -58,3 +62,5 @@ void pubKeyframe(Estimator &estimator);
 void pubRelocalization(const Estimator &estimator);
 
 void pubVisFOnIm(sensor_msgs::ImageConstPtr im_ptr);
+
+void pubLidarFrame(const Estimator &estimator, const std_msgs::Header &header);
