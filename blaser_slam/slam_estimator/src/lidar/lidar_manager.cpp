@@ -132,7 +132,7 @@ int LidarManager::getRelativeTf(LidarFramePtr frame1, LidarFramePtr frame2,
     Tdt(2, 3) = dt.z();
     // first translate to align the starting point, then rotate back
     tf = tf * Tdt;
-    tf(2, 3) = 0; // set z trans to 0
+    tf(2, 3) = -3; // set z trans to 0
     T = tf;
     return 0;
 }

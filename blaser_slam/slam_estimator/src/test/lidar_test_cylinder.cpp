@@ -73,8 +73,10 @@ int main(int argc, char **argv)
     LidarManager lidar_manager;
     LidarFramePtr frame1(new LidarFrame(cloud, 5));
     LidarFramePtr frame2(new LidarFrame(transformed_cloud, 100));
-    cout << "frame1 cylinder: " << frame1->cylinder_extracted_ << endl;
-    cout << "frame2 cylinder: " << frame2->cylinder_extracted_ << endl;
+    cout << "frame1 #points: " << frame1->pc_l_->size() << endl;
+    cout << "frame2 #points: " << frame2->pc_l_->size() << endl;
+    cout << "frame1 cylinder: " << frame1->extractCylinder() << endl;
+    cout << "frame2 cylinder: " << frame2->extractCylinder() << endl;
 
     Eigen::Vector3f p1 = frame1->getAxisPoint();
     Eigen::Vector3f d1 = frame1->getAxis();
@@ -134,16 +136,16 @@ int main(int argc, char **argv)
 */
 
 
-
+    cout << "done axes extraction"<< endl;
     Eigen::Matrix4f tf;
     lidar_manager.getRelativeTf(frame1, frame2, tf);
-    cout << "tf: " << tf << endl;
+    cout << "relative tf: " << tf << endl;
     
     // transform back
     LidarPointCloudPtr cloud2(new LidarPointCloud);
     pcl::transformPointCloud(*transformed_cloud, *cloud2, tf);
     // we don't care about the translation along the axis of the original cloud
-
+/*
     cout <<" gt: " << endl;
     Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
     // Define a translation of 2.5 meters on the x axis.
@@ -153,7 +155,7 @@ int main(int argc, char **argv)
     transform_2.rotate(Eigen::AngleAxisf(theta, Eigen::Vector3f::UnitX()));
     // Print the transformation
     std::cout << transform_2.matrix() << std::endl;
-
+*/
 
 
     /////////// visualize

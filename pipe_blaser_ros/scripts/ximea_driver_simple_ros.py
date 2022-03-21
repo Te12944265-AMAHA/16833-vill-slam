@@ -3,9 +3,32 @@ import cv2
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
+from threading import Lock
 
 AUTO_EXPOSURE = False
 AWB = False
+
+im_queue = []
+im_mutex = Lock()
+
+def im_cb(msg):
+    global im_queue
+    im_mutex.acquire()
+    im_queue.append(msg)
+    im_mutex.release()
+
+def process_from_buffer():
+    # lock
+    im_mutex.acquire()
+    if len(im_queue) == 0:
+        res = None
+    else:
+        res = im_queue.pop()
+        while len(im_queue) != 0:
+            im_queue.pop()
+    im_mutex.release()
+    return res
+
 
 cam = xiapi.Camera()
 
@@ -18,7 +41,7 @@ cam.set_imgdataformat('XI_RGB24')
 cam.set_framerate(20)
 cam.set_acq_timing_mode('XI_ACQ_TIMING_MODE_FRAME_RATE_LIMIT')
 if not AUTO_EXPOSURE:
-    cam.set_exposure(2000)
+    cam.set_exposure(20000)
 else:
     # auto exposure & its level (percent of average intensity)
     cam.enable_aeag()
@@ -37,12 +60,15 @@ bridge = CvBridge()
 
 # publisher
 rospy.init_node('ximea_driver_simple')
-im_pub = rospy.Publisher('/ximea/image', Image, queue_size=10)
+im_pub = rospy.Publisher('/ximea/image', Image)
+im2_pub = rospy.Publisher('/l515/image', Image)
+im_sub = rospy.Subscriber('/camera/color/image_raw', Image, callback=im_cb)
 
 # start data acquisition
 print('Starting data acquisition...')
 cam.start_acquisition()
 
+rate = rospy.Rate(4)
 #create instance of Image to store image data and metadata
 while not rospy.is_shutdown():
     xi_img = xiapi.Image()
@@ -67,6 +93,13 @@ while not rospy.is_shutdown():
     im_msg.header.stamp = im_stamp
 
     im_pub.publish(im_msg)
+
+    im2_msg = process_from_buffer()
+    if im2_msg != None:
+        im2_msg.header.stamp = im_stamp
+        im2_pub.publish(im2_msg)
+
+    rate.sleep()
 
 #stop data acquisition
 print('Stopping acquisition...')

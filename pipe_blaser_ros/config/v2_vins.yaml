@@ -99,7 +99,7 @@ visualize_camera_size: 0.01      # size of camera marker in RVIZ
 visualize_camera_line_width: 0.002
 
 use_encoder: 0
-use_lidar: 1
+use_lidar: 0
 
 # image parameters
 width: 1232

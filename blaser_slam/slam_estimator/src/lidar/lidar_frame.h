@@ -39,6 +39,11 @@ public:
 
     double getRadius() const { return radius; }
     void setRadius(double rad) { radius = rad; }
+    
+    int extractCylinder() { 
+        cylinder_extracted_ = lidar_extractor.findCylinder(pc_l_, pc_cylinder_, cylinder_coeff_);
+        return cylinder_extracted_;
+    }
 
 
     // lidar point cloud in lidar frame
