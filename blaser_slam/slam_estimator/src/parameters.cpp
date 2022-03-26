@@ -9,6 +9,9 @@ double GYR_N, GYR_W;
 std::vector<Eigen::Matrix3d> RIC;
 std::vector<Eigen::Vector3d> TIC;
 
+Eigen::Matrix3d R_CAM_LID;
+Eigen::Vector3d T_CAM_LID;
+
 Eigen::Vector3d G{0.0, 0.0, 9.8};
 
 double BIAS_ACC_THRESHOLD;
@@ -136,6 +139,25 @@ void readParameters(ros::NodeHandle &n)
     TIC.push_back(eigen_T);
     ROS_INFO_STREAM("Extrinsic_R : " << std::endl << RIC[0]);
     ROS_INFO_STREAM("Extrinsic_T : " << std::endl << TIC[0].transpose());
+
+    // lidar camera extrinsics
+    cv::Mat cv_Q_cl, cv_T_cl;
+    fsSettings["extrinsicRotationCamLidar"] >> cv_Q_cl;
+    fsSettings["extrinsicTranslationCamLidar"] >> cv_T_cl;
+    Eigen::Vector4d eigen_Q_cl;
+    Eigen::Vector3d eigen_T_cl;
+    cv::cv2eigen(cv_Q_cl, eigen_Q_cl);
+    cv::cv2eigen(cv_T_cl, eigen_T_cl);
+    Eigen::Quaterniond Q_cl;
+    Q_cl.x() = eigen_Q_cl[0];
+    Q_cl.y() = eigen_Q_cl[1];
+    Q_cl.z() = eigen_Q_cl[2];
+    Q_cl.w() = eigen_Q_cl[3];
+    Eigen::Matrix3d eigen_R_cl(Q_cl.normalized());
+    R_CAM_LID = eigen_R_cl;
+    T_CAM_LID = eigen_T_cl;
+    ROS_INFO_STREAM("Camera Lidar Extrinsic R_CAM_LID : " << std::endl << R_CAM_LID);
+    ROS_INFO_STREAM("Camera Lidar Extrinsic T_CAM_LID : " << std::endl << T_CAM_LID.transpose());
 
   }
 

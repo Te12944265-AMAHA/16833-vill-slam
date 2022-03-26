@@ -35,7 +35,7 @@ void Estimator::setParameter()
   td = TD;
   EncoderFactor::sqrt_info = 1e1;
   // TODO Lidar parameters
-  LidarFactor::sqrt_info = 1e1;
+  LidarFactor::sqrt_info = 1e-3;
 }
 
 void Estimator::clearState()
@@ -1547,6 +1547,10 @@ void Estimator::optimization()
     ROS_DEBUG("entering USE_LIDAR block in estimator");
     ROS_DEBUG("number of frames in lidar window: %d", lidar_manager.getWindowSize());
     ROS_DEBUG("WINDOW SIZE: %d", WINDOW_SIZE);
+    Eigen::Matrix4d T_i_c, T_c_lid, T_i_lid;
+    Rt2T(R_CAM_LID, T_CAM_LID, T_c_lid);
+    Rt2T(ric[0], tic[0], T_i_c);
+    T_i_lid = T_i_c * T_c_lid;
     for (int i = 0; i < WINDOW_SIZE - 1; i++)
     {
       ROS_DEBUG("at frame %d in window", i);
@@ -1561,10 +1565,13 @@ void Estimator::optimization()
       if (lidar_res < 0)
         continue;
       // create a factor for each point pair
+      Eigen::Matrix4d premult1, premult2;
+      premult1 = T_i_lid * T_prev_2;
+      premult2 = T_i_lid * T_cur_1;
       for (int j = 0; j < corrs_df1f2_df2f1.size(); j++) {
         Eigen::Vector3d p_df1_f2 = corrs_df1f2_df2f1[j].first.cast<double>();
         Eigen::Vector3d p_df2_f1 = corrs_df1f2_df2f1[j].second.cast<double>();
-        auto lidar_factor = LidarFactor::Create(p_df1_f2, p_df2_f1, T_prev_2, T_cur_1);
+        auto lidar_factor = LidarFactor::Create(p_df1_f2, p_df2_f1, T_i_lid, T_i_lid);
         problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
       }
       ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %d",

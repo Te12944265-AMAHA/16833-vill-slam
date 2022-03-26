@@ -27,6 +27,24 @@ projection_parameters:
    u0: 6.0948552492917770e+02
    v0: 5.2350117336503433e+02
 
+
+
+#camera lidar extrinsics T_ximea_lidar 
+#in x y z w quaternion form
+extrinsicRotationCamLidar: !!opencv-matrix
+   rows: 4
+   cols: 1
+   dt: d
+   data: [0.00304555, -0.04327505,  0.03512447,  0.99844092]
+#Translation
+extrinsicTranslationCamLidar: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [0.05902695, -0.02498654, -0.01857534]
+
+
+
 # Extrinsic parameter between IMU and Camera.
 estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
@@ -99,7 +117,7 @@ visualize_camera_size: 0.01      # size of camera marker in RVIZ
 visualize_camera_line_width: 0.002
 
 use_encoder: 0
-use_lidar: 0
+use_lidar: 1
 
 # image parameters
 width: 1232
