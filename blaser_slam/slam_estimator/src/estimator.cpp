@@ -686,6 +686,7 @@ Estimator::relativePoseLaser(Matrix3d &relative_R, Vector3d &relative_T, int &l)
     for (const auto &fpf_pair : corres)
       corres_points.push_back(make_pair(fpf_pair.first->point,
                                         fpf_pair.second->point));
+    std::cout << "........................#corrs: " << corres.size() << std::endl;
     if (corres.size() > 20)
     {
       double sum_parallax = 0;
@@ -699,9 +700,10 @@ Estimator::relativePoseLaser(Matrix3d &relative_R, Vector3d &relative_T, int &l)
 
       }
       average_parallax = 1.0 * sum_parallax / int(corres.size());
+      std::cout << "........................avg_parallax * 460 =  " << average_parallax * 460 << std::endl;
       // the number 460 below is focal length
       std::vector<bool> inlier_mask;
-      if (average_parallax * 460 > 30 &&
+      if (average_parallax * 460 > 15 &&
           m_estimator.solveRelativeRT(corres_points, relative_R, relative_T,
                                       inlier_mask))
       {

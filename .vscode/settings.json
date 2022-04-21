@@ -103,6 +103,8 @@
         "dense": "cpp",
         "core": "cpp",
         "numericaldiff": "cpp",
-        "specialfunctions": "cpp"
+        "specialfunctions": "cpp",
+        "variant": "cpp",
+        "bit": "cpp"
     }
 }

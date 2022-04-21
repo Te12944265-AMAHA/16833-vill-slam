@@ -394,14 +394,14 @@ make[1]: Leaving directory '/home/pi/Projects/blaser-rpi/bno085/build/CMakeFiles
     Feature record: CXX_FEATURE:1cxx_variadic_templates
 
 
-Detecting CXX [-std=c++11] compiler features compiled with the following output:
+Detecting CXX [-std=c++14] compiler features compiled with the following output:
 Change Dir: /home/pi/Projects/blaser-rpi/bno085/build/CMakeFiles/CMakeTmp
 
 Run Build Command:"/usr/bin/make" "cmTC_bb93e/fast"
 /usr/bin/make -f CMakeFiles/cmTC_bb93e.dir/build.make CMakeFiles/cmTC_bb93e.dir/build
 make[1]: Entering directory '/home/pi/Projects/blaser-rpi/bno085/build/CMakeFiles/CMakeTmp'
 Building CXX object CMakeFiles/cmTC_bb93e.dir/feature_tests.cxx.o
-/usr/bin/c++     -std=c++11 -o CMakeFiles/cmTC_bb93e.dir/feature_tests.cxx.o -c /home/pi/Projects/blaser-rpi/bno085/build/CMakeFiles/feature_tests.cxx
+/usr/bin/c++     -std=c++14 -o CMakeFiles/cmTC_bb93e.dir/feature_tests.cxx.o -c /home/pi/Projects/blaser-rpi/bno085/build/CMakeFiles/feature_tests.cxx
 Linking CXX executable cmTC_bb93e
 /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bb93e.dir/link.txt --verbose=1
 /usr/bin/c++        CMakeFiles/cmTC_bb93e.dir/feature_tests.cxx.o  -o cmTC_bb93e -rdynamic 

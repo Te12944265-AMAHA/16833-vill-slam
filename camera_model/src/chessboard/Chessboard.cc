@@ -1,6 +1,7 @@
 #include "camodocal/chessboard/Chessboard.h"
 
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/calib3d/calib3d_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "camodocal/chessboard/ChessboardQuad.h"
@@ -31,11 +32,12 @@ void
 Chessboard::findCorners(bool useOpenCV)
 {
     mCornersFound = findChessboardCorners(mImage, mBoardSize, mCorners,
-                                          CV_CALIB_CB_ADAPTIVE_THRESH +
-                                          CV_CALIB_CB_NORMALIZE_IMAGE +
-                                          CV_CALIB_CB_FILTER_QUADS +
-                                          CV_CALIB_CB_FAST_CHECK,
-                                          useOpenCV);
+                                        CV_CALIB_CB_ADAPTIVE_THRESH +
+                                        CV_CALIB_CB_NORMALIZE_IMAGE +
+                                        CV_CALIB_CB_FILTER_QUADS +
+                                        CV_CALIB_CB_FAST_CHECK,
+                                        useOpenCV);
+
 
     if (mCornersFound)
     {
@@ -141,6 +143,7 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
     // Image histogram normalization and
     // BGR to Grayscale image conversion (if applicable)
     // MARTIN: Set to "false"
+    
     if (image.channels() != 1 || (flags & CV_CALIB_CB_NORMALIZE_IMAGE))
     {
         cv::Mat norm_img(image.rows, image.cols, CV_8UC1);
@@ -157,7 +160,7 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             img = norm_img;
         }
     }
-
+    
     if (flags & CV_CALIB_CB_FAST_CHECK)
     {
         if (!checkChessboard(img, patternSize))

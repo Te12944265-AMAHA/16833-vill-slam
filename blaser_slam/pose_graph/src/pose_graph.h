@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
 #include <eigen3/Eigen/Dense>
 #include <string>
 #include <ceres/ceres.h>

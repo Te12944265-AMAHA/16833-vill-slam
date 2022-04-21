@@ -18,7 +18,7 @@
         <node name="profile_republish" pkg="image_transport" type="republish" args="compressed in:=/ximea/image_profile raw out:=/ximea/image_profile"/>
     </group>
 
-    <node name="encoder_filter" pkg="pipe_blaser_ros" type="encoder_filter.py" output="screen"/>
+    <!--node name="encoder_filter" pkg="pipe_blaser_ros" type="encoder_filter.py" output="screen"/-->
 
     <!--node name="image_sharpen" pkg="pipe_blaser_ros" type="image_sharpen.py"/-->
   

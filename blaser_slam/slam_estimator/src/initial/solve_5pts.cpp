@@ -249,7 +249,7 @@ MotionEstimator::solveRelativeRT(const vector<pair<Vector3d, Vector3d>> &corres,
         << 1, 0, 0, 0, 1, 0, 0, 0, 1);
     cv::Mat rot, trans;
     int inlier_cnt = cv::recoverPose(E, ll, rr, cameraMatrix, rot, trans, mask);
-    //cout << "inlier_cnt " << inlier_cnt << endl;
+    cout << "...........................inlier_cnt " << inlier_cnt << endl;
 
     // convert cv mats to eigen mat and vec
     Eigen::Matrix3d R;
@@ -300,7 +300,7 @@ MotionEstimator::solveRelativeRT(const vector<pair<Vector3d, Vector3d>> &corres,
     }
     */
 
-    if (inlier_cnt > 12)
+    if (inlier_cnt > 8)
       return true;
     else
       return false;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(blaser_ros)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++14")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(catkin REQUIRED COMPONENTS
@@ -17,9 +17,10 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(PythonLibs 2.7)
+#find_package(Python3 REQUIRED)
+find_package(PythonLibs 3.8 REQUIRED)
 
 generate_dynamic_reconfigure_options(
   cfg/LaserDetector.cfg
@@ -43,6 +44,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  /usr/include/python3.8
 )
 
 ## Declare a C++ library

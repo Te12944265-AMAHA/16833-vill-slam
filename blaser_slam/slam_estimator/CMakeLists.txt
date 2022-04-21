@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(slam_estimator)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++14")
 #-DEIGEN_USE_MKL_ALL")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
@@ -24,7 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(PCL REQUIRED)
 
 
-find_package(OpenCV 3.2 REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 
 # message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
@@ -111,8 +111,14 @@ add_executable(slam_estimator
   src/factor/residual_stat_iter_cb.cpp
   )
 add_dependencies(slam_estimator ${PROJECT_NAME}_gencfg)
-target_link_libraries(slam_estimator ${catkin_LIBRARIES}
-  ${CERES_LIBRARIES} pcl_filters ${OpenCV_LIBS})
+target_link_libraries(slam_estimator 
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${PCL_COMMON_LIBRARIES} 
+  ${PCL_IO_LIBRARIES} 
+  ${PCL_VISUALIZATION_LIBRARIES} 
+  ${OpenCV_LIBS})
 
 add_executable(vins_test
   src/test/eigen_map_quat_test.cpp)
@@ -146,6 +152,7 @@ target_link_libraries(lidar_test_cylinder
   ${PCL_COMMON_LIBRARIES} 
   ${PCL_IO_LIBRARIES} 
   ${PCL_VISUALIZATION_LIBRARIES}
+  ${CERES_LIBRARIES} 
 )
 
 
