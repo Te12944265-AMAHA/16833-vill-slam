@@ -1,8 +1,0 @@
-prefix=/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel
-
-Name: pose_graph
-Description: Description of pose_graph
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

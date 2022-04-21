@@ -1,1 +1,0 @@
-set(ORDERED_PATHS "/home/tina-laptop/localFiles/readings/learnROS/catkin_ws/devel/lib;/opt/ros/melodic/lib")

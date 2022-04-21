@@ -1,8 +1,0 @@
-prefix=/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel
-
-Name: slam_estimator
-Description: Description of slam_estimator
-Version: 0.0.0
-Cflags: -I/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel/include
-Libs: -L${prefix}/lib 
-Requires: roscpp message_runtime std_msgs geometry_msgs sensor_msgs nav_msgs tf visualization_msgs
