@@ -419,11 +419,13 @@ void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
     Eigen::Affine3f T_2_3, T_prev_cur;
     if (df1->use_interpolate && df2->use_interpolate)
     {
-        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+        //align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
     }
     else if (df1->use_interpolate && !(df2->use_interpolate))
     {
-        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+        align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
+        //align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f2_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
     }
     else if (!(df1->use_interpolate) && df2->use_interpolate)
     {
@@ -433,7 +435,8 @@ void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
     {
         align_pcl_icp(df2->f1_p->get_pointcloud(), df1->f1_p->get_pointcloud(), corrs_df1f2_df2f1, T_2_3);
     }
-    T_prev_cur = df1->T_cur_2 * T_2_3.matrix() * df2->T_1_cur;
+    T_prev_cur = df1->T_cur_1 * T_2_3.matrix() * invT(df2->T_cur_1.cast<double>()).cast<float>();
+    //T_prev_cur = df1->T_cur_2 * T_2_3.matrix() * df2->T_1_cur;
     tf_1_2 = T_prev_cur;
     ROS_DEBUG("done get_tf_between_data_frames");
 }
@@ -442,8 +445,8 @@ void LidarManager::get_tf_between_data_frames(LidarDataFrameConstPtr df1,
 
 int LidarManager::get_relative_tf(double t1, 
                                    double t2, 
-                                   std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f2_df2f1,
-                                   Eigen::Matrix4d &T_prev_2,
+                                   std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> &corrs_df1f1_df2f1,
+                                   Eigen::Matrix4d &T_prev_1,
                                    Eigen::Matrix4d &T_cur_1)
 {
     ROS_DEBUG("entering get_relative_tf");
@@ -456,9 +459,9 @@ int LidarManager::get_relative_tf(double t1,
     LidarDataFramePtr df1 = lidar_window_[t1];
     LidarDataFramePtr df2 = lidar_window_[t2];
     // this is mainly to get the correspondences
-    get_tf_between_data_frames(df1, df2, corrs_df1f2_df2f1, tf_1_2);
-    T_prev_2 = df1->T_cur_2.cast<double>();
-    T_cur_1 = invT(df2->T_1_cur.cast<double>());
+    get_tf_between_data_frames(df1, df2, corrs_df1f1_df2f1, tf_1_2);
+    T_prev_1 = df1->T_cur_1.cast<double>();
+    T_cur_1 = df2->T_cur_1.cast<double>();
     ROS_DEBUG("done get_relative_tf");
     return 0;
 }

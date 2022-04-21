@@ -20,6 +20,8 @@ ros::Publisher pub_vis_f_on_laser;
 
 ros::Publisher pub_lidar_frame;
 
+ros::Publisher pub_residual;
+
 CameraPoseVisualization cameraposevisual(0, 1, 0, 1);
 CameraPoseVisualization keyframebasevisual(0.0, 0.0, 1.0, 1.0);
 static double sum_of_path = 0;
@@ -52,6 +54,8 @@ void registerPub(ros::NodeHandle &n)
   pub_vis_f_on_im = n.advertise<sensor_msgs::Image>("f_on_im", 10);
 
   pub_lidar_frame = n.advertise<sensor_msgs::PointCloud2>("lidar/cloud_processed", 100);
+
+  pub_residual = n.advertise<slam_estimator::ResidualCostMsg>("factor_graph/residuals", 100);
 
   cameraposevisual.setScale(CAM_VIS_SCALE);
   cameraposevisual.setLineWidth(CAM_VIS_LINE_WIDTH);
@@ -581,7 +585,12 @@ void pubLidarFrame(const Estimator &estimator, const std_msgs::Header &header)
   Matrix4d T_w_1;
   pose2T(P, R, T_w_1);
   // TODO calib between lidar frame and robot body frame
-  Matrix4f T_w_cur = T_w_1.cast<float>() * ldf->T_1_cur;
+  Eigen::Matrix4d T_i_c, T_c_lid, T_i_lid;
+  Rt2T(R_CAM_LID, T_CAM_LID, T_c_lid);
+  Rt2T(estimator.ric[0], estimator.tic[0], T_i_c);
+  T_i_lid = T_i_c * T_c_lid;
+
+  Matrix4f T_w_cur = T_w_1.cast<float>() * T_i_lid.cast<float>() * invT(ldf->T_cur_1.cast<double>()).cast<float>();
   Eigen::Affine3f tf_w_cur = Eigen::Affine3f::Identity();
   tf_w_cur.matrix() = T_w_cur;
 
@@ -589,6 +598,47 @@ void pubLidarFrame(const Estimator &estimator, const std_msgs::Header &header)
   pcl::transformPointCloud(*(ldf->f1_p->get_pointcloud()), *cloud_w, tf_w_cur);
 
   pcl_to_cloud_msg(cloud_w, lidar_msg);
+  lidar_msg->header = header;
   lidar_msg->header.frame_id = "world";
   pub_lidar_frame.publish(lidar_msg);
+
+}
+
+void pubCosts(const Estimator &estimator, const std_msgs::Header &header)
+{
+  slam_estimator::ResidualCostMsg msg_out;
+  msg_out.header = header;
+  msg_out.header.frame_id = "world";
+  for (auto residual : estimator.cost_map)
+  {
+    switch(residual.first) {
+      case MARGINALIZATION_FACTOR:
+        msg_out.marginalization_factor = residual.second;
+        break;
+      case IMU_FACTOR:
+        msg_out.imu_factor = residual.second;
+        break;
+      case FEATURE_REPROJ_FACTOR:
+        msg_out.feature_reproj_factor = residual.second;
+        break;
+      case LASER_2D_FACTOR:
+        msg_out.laser_2d_factor = residual.second;
+        break;
+      case P2L_ICP_FACTOR:
+        msg_out.p2l_icp_factor = residual.second;
+        break;
+      case ENCODER_FACTOR:
+        msg_out.encoder_factor = residual.second;
+        break;
+      case LIDAR_FACTOR:
+        msg_out.lidar_factor = residual.second;
+        break;
+      case RELOC_FACTOR:
+        msg_out.reloc_factor = residual.second;
+        break;
+      default:
+        break;
+    }
+  }
+  pub_residual.publish(msg_out);
 }

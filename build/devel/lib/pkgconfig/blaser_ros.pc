@@ -1,0 +1,8 @@
+prefix=/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel
+
+Name: blaser_ros
+Description: Description of blaser_ros
+Version: 0.0.0
+Cflags: -I/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel/include -I/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/blaser_ros/include
+Libs: -L${prefix}/lib -llaser_stripe
+Requires: geometry_msgs pcl_conversions pcl_ros roscpp sensor_msgs std_msgs dynamic_reconfigure

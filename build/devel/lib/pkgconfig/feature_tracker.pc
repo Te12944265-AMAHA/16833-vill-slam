@@ -1,0 +1,8 @@
+prefix=/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/build/devel
+
+Name: feature_tracker
+Description: Description of feature_tracker
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -259,13 +259,13 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         lidar_data_frame_ptr->f1_p = f1;
         lidar_data_frame_ptr->feature_time = feature_time;
         lidar_data_frame_ptr->use_interpolate = false;
-        lidar_data_frame_ptr->f2_p = nullptr;
+        //lidar_data_frame_ptr->f2_p = nullptr;
         Eigen::Matrix4d T_i;
         Eigen::Vector3d t(0,0,0);
         Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
         pose2T(t, q, T_i);
-        lidar_data_frame_ptr->T_1_cur = T_i.cast<float>();
-        lidar_data_frame_ptr->T_cur_2 = T_i.cast<float>();
+        lidar_data_frame_ptr->T_cur_1 = T_i.cast<float>();
+        //lidar_data_frame_ptr->T_cur_2 = T_i.cast<float>();
         ROS_DEBUG("done else if");
       }
       else // two left, then we interp
@@ -303,13 +303,13 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         interpTrans(q_i, t_i,q_1_2, tf_1_2.translation(), ratio, q_1_cur, t_1_cur);
         Eigen::Matrix4d T_1_cur_d;
         pose2T(t_1_cur, q_1_cur, T_1_cur_d);
-        lidar_data_frame_ptr->T_1_cur = T_1_cur_d.cast<float>();
+        lidar_data_frame_ptr->T_cur_1 = invT(T_1_cur_d).cast<float>(); 
         // get T_cur_2
-        Eigen::Matrix4d T_cur_2_d = invT(T_1_cur_d) * tf_1_2.matrix();
-        lidar_data_frame_ptr->T_cur_2 = T_cur_2_d.cast<float>();
+        //Eigen::Matrix4d T_cur_2_d = invT(T_1_cur_d) * tf_1_2.matrix();
+        //lidar_data_frame_ptr->T_cur_2 = T_cur_2_d.cast<float>();
 
         lidar_data_frame_ptr->f1_p = f1;
-        lidar_data_frame_ptr->f2_p = f2;
+        //lidar_data_frame_ptr->f2_p = f2;
       }
       frame.lidar = lidar_data_frame_ptr;
       ROS_DEBUG("done adding lidar to data frame");
@@ -810,6 +810,7 @@ void process()
       pubCameraPose(estimator, header);
       pubPointCloud(estimator, header, false);
       pubLidarFrame(estimator, header);
+      pubCosts(estimator, header);
       pubTF(estimator, header);
       pubKeyframe(estimator);
       if (relo_msg != NULL)
@@ -832,6 +833,8 @@ void SLAM_status_cb(slam_estimator::BlaserSLAMConfig &config, uint32_t level)
 {
   estimator.setMappingStatus(config.mapping_status);
   estimator.setEnableWindow2Map(config.window_to_map_tracking);
+
+  estimator.setParameter(config.laser2d_factor_weight, config.p2l_analytic_icp_factor_weight, config.encoder_factor_weight, config.lidar_factor_weight);
 }
 
 int main(int argc, char **argv)

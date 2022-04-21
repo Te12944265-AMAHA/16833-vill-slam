@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   tf
   cv_bridge
-
+  message_generation
   pcl_conversions
   pcl_ros
   camera_model
@@ -35,6 +35,13 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3 REQUIRED)
 find_package(Matio REQUIRED)
 
+add_message_files(FILES
+  ResidualCostMsg.msg
+)
+
+# Actually generate the language-specific message and service files
+generate_messages(DEPENDENCIES std_msgs)
+
 generate_dynamic_reconfigure_options(
   cfg/BlaserSLAM.cfg
 )
@@ -48,7 +55,16 @@ include_directories(
 )
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS roscpp 
+                message_runtime
+                std_msgs 
+                geometry_msgs
+                sensor_msgs
+                nav_msgs
+                tf
+                visualization_msgs
+)
 
 add_executable(slam_estimator
   src/estimator_node.cpp

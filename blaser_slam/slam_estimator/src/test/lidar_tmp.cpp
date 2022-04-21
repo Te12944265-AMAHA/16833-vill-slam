@@ -23,6 +23,7 @@ int main(int argc, char **argv)
     LidarPointCloudPtr cloud_sliced(new LidarPointCloud);
     LidarPointCloudPtr cloud_denoised(new LidarPointCloud);
     string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/wean.pcd";
+    string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/wean_processed.pcd";
 
     if (pcl::io::loadPCDFile<LidarPoint>(filename_1, *cloud) == -1)
     {
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
     sor.filter(*cloud_filtered);
 
     cout << "filtered cloud size: " << cloud_filtered->points.size() << endl;
-
+/*
     // check distance to plane and filter
     for (int i = 0; i < cloud_filtered->points.size(); i++)
     {
@@ -59,14 +60,14 @@ int main(int argc, char **argv)
         if (dist < 0.5)
             cloud_sliced->points.push_back(cloud_filtered->points[i]);
     }
-
+*/
     // get rid of spurious points in the middle
     // then we use radius filter
     pcl::RadiusOutlierRemoval<LidarPoint> outrem;
     // build the filter
-    outrem.setInputCloud(cloud_sliced);
-    outrem.setRadiusSearch(0.5);
-    outrem.setMinNeighborsInRadius(7);
+    outrem.setInputCloud(cloud_filtered);
+    outrem.setRadiusSearch(2.0);
+    outrem.setMinNeighborsInRadius(30);
     outrem.setKeepOrganized(true);
     // apply filter
     outrem.filter(*cloud_denoised);
@@ -81,6 +82,11 @@ int main(int argc, char **argv)
     pcl::getMinMax3D (*cloud_denoised, minPt, maxPt);
     cout << "min x y z: "<< minPt.x << ",  " << minPt.y<< ", " <<minPt.z << endl;
     cout << "max x y z: "<< maxPt.x << ",  " << maxPt.y<< ", " <<maxPt.z << endl;
+    cloud_denoised->width = 1;
+    cloud_denoised->height = cloud_denoised->points.size();
+    pcl::io::savePCDFileASCII (filename_2, *cloud_denoised);
+
+    exit(0);
 
     // x in  -40 m to 40 m (horizontal), y in -40 to 80 (verticle), z 0
     cv::Mat outimg = cv::Mat::ones(240, 160, CV_8UC1) * 255;
