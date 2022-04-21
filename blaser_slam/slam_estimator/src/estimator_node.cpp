@@ -581,9 +581,12 @@ void encoder_callback(const geometry_msgs::Vector3StampedConstPtr encoder_msg)
 
 void lidar_callback(const sensor_msgs::PointCloud2ConstPtr &lidar_msg)
 {
-  m_buf.lock();
-  lidar_buf.push_back(lidar_msg);
-  m_buf.unlock();
+  if (USE_LIDAR)
+  {
+    m_buf.lock();
+    lidar_buf.push_back(lidar_msg);
+    m_buf.unlock();
+  }
 }
 
 void relocalization_callback(const sensor_msgs::PointCloudConstPtr &points_msg)

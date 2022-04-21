@@ -17,10 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
 )
 
-find_package(OpenCV 4 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
-#find_package(Python3 REQUIRED)
-find_package(PythonLibs 3.8 REQUIRED)
+find_package(PythonLibs 2.7)
 
 generate_dynamic_reconfigure_options(
   cfg/LaserDetector.cfg

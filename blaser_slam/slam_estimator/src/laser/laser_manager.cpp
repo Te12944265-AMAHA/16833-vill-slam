@@ -116,6 +116,7 @@ bool LaserManager::findLaserPointsInFrame2D(const Vector2d &uv, double radius,
   }
   cout << "Got 2d feature-laser match on " << uv.transpose() << endl;
   // todo check the searched points' uv, see if is searching pixel location
+  return true;
 }
 
 

@@ -212,6 +212,7 @@ bool computeLaserFrameNormal(LaserPointCloudPtr mid,
     it_mid->normal_y = normal(1);
     it_mid->normal_z = normal(2);
   }
+  return true;
 }
 
 bool computeLaserFrameNormal(LaserPointCloudPtr mid,
@@ -249,6 +250,7 @@ bool computeLaserFrameNormal(LaserPointCloudPtr mid,
     it_mid->normal_y = normal(1);
     it_mid->normal_z = normal(2);
   }
+  return true;
 }
 
 void pose2T(const Vector3d &t, const Quaterniond &q, Matrix4d &T) 
