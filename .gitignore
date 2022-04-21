@@ -6,3 +6,4 @@ blaser_slam/pose_graph/
 blaser_slam/support_files/
 **/.vscode/
 **/test_data/
+**/build/
