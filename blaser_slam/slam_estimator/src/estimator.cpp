@@ -711,7 +711,7 @@ Estimator::relativePoseLaser(Matrix3d &relative_R, Vector3d &relative_T, int &l)
       std::cout << "........................avg_parallax * 460 =  " << average_parallax * 460 << std::endl;
       // the number 460 below is focal length
       std::vector<bool> inlier_mask;
-      if (average_parallax * 460 > 15 &&
+      if (average_parallax * 460 > 30 &&
           m_estimator.solveRelativeRT(corres_points, relative_R, relative_T,
                                       inlier_mask))
       {
