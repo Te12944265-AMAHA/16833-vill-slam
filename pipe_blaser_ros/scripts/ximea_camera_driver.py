@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from ximea import xiapi
 import cv2
 import rospy
@@ -10,7 +11,12 @@ from threading import Thread, Lock
 stamp_mutex = Lock()
 stamp_buffer = []
 
-port = '/dev/ttyACM1'
+# define macros for return codes
+EMPTY_LINE = 0
+STOP_RECEIVED = 1
+READ_FINISHED = 2
+
+port = '/dev/ttyACM0'
 
 class Camera:
     def __init__(self):
@@ -19,7 +25,7 @@ class Camera:
         self.initCamera()
         self.bridge = CvBridge()
         self.cam.start_acquisition()
-        self.TIME_OUT = 20000  # raise error if no image for 0.5 s
+        self.TIME_OUT = 20000  # raise error if no image for 20ms
         self.im_buffer = []
         self.im_counter = 0
         self.prev_stamp = rospy.Time(0)
@@ -66,6 +72,7 @@ class Camera:
         self.im_counter += 1
 
     def close(self):
+        print('Closing camera')
         self.cam.close_device()
 
 
@@ -74,7 +81,11 @@ class SerialHandler:
         self.ser = serial.Serial(port, 57600, timeout=1)
         self.ser.flush()
         self.stamp_counter = 0
+        # keep sending start until teensy replies
+        print("Trying to connect with teensy")
+        #while self.readData() == False:
         self.ser.write("start".encode())
+            #time.sleep(0.05)
         self.time_offset = 0
         print("Serial ready!")
 
@@ -82,7 +93,7 @@ class SerialHandler:
         global stamp_buffer
         line = self.ser.readline()
         if len(line) == 0:
-            return
+            return EMPTY_LINE
         msg = line.rstrip().split(' ')
         if msg[0] == 'camera':
             stamp_ros = rospy.Time(secs=int(msg[2]), nsecs=int(msg[3]))
@@ -104,12 +115,25 @@ class SerialHandler:
             pass
         elif msg[0] == 'pps':
             pass
+        elif msg[0] == 'waiting':
+            print('Teensy waiting to start')
+        elif msg[0] == 'starting':
+            print('Teensy starts triggering')
+        elif msg[0] == 'stopping':
+            print('Teensy stops triggering')
+            return STOP_RECEIVED
         else:
             print("Serial message " + msg[0] + " not recognized")
+        return READ_FINISHED
 
     def close(self):
-        print("Stopping MCU work!")
+        print("Trying to stop teensy trigger...")
+        t_stop = time.time()
         self.ser.write("stop".encode())
+        # after SIGINT, wait 3 seconds to confirm hardware has stopped
+        while time.time()-t_stop < 3: 
+            if self.readData() == STOP_RECEIVED:
+                break
         self.ser.close()
 
 
@@ -154,6 +178,7 @@ def main():
             else:
                 im_profile_pub.publish(im_msg)
         stamp_mutex.release()
+    print('Closing hardware devices...')
     camera.close()
 
     t_stamp.join()
