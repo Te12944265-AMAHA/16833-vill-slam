@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: blaser_ros
+Description: Description of blaser_ros
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -llaser_stripe
+Requires: geometry_msgs pcl_conversions pcl_ros roscpp sensor_msgs std_msgs dynamic_reconfigure

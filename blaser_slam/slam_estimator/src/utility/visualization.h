@@ -21,6 +21,8 @@
 #include "../lidar/lidar_frame.h"
 #include "pcl_utils.h"
 
+#include <slam_estimator/ResidualCostMsg.h>
+
 extern ros::Publisher pub_odometry;
 extern ros::Publisher pub_path, pub_pose;
 extern ros::Publisher pub_cloud, pub_map;
@@ -34,6 +36,7 @@ extern ros::Publisher pub_vis_f_on_im;
 extern ros::Publisher pub_vis_f_on_laser;
 
 extern ros::Publisher pub_lidar_frame;
+extern ros::Publisher pub_residual;
 
 void registerPub(ros::NodeHandle &n);
 
@@ -64,3 +67,5 @@ void pubRelocalization(const Estimator &estimator);
 void pubVisFOnIm(sensor_msgs::ImageConstPtr im_ptr);
 
 void pubLidarFrame(const Estimator &estimator, const std_msgs::Header &header);
+
+void pubCosts(const Estimator &estimator, const std_msgs::Header &header);

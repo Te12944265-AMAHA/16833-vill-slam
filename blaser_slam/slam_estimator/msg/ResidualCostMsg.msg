@@ -1,0 +1,9 @@
+Header header
+float64 marginalization_factor
+float64 imu_factor 
+float64 feature_reproj_factor 
+float64 laser_2d_factor 
+float64 p2l_icp_factor 
+float64 encoder_factor 
+float64 lidar_factor
+float64 reloc_factor

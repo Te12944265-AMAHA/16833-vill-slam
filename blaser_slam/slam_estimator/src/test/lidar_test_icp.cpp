@@ -27,6 +27,25 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
 
+    // test pcl reserve
+    LidarPointCloudPtr pc_tmp (new LidarPointCloud);
+    pc_tmp->reserve(4);
+    for (int i = 0; i < 3; i++)
+    {
+        LidarPoint pt_tmp;
+        pt_tmp.x = 1.1;
+        pt_tmp.y = 2.2;
+        pt_tmp.z = 3.3;
+        pc_tmp->push_back(pt_tmp);
+    }
+    cout << "size: " << pc_tmp->size() << endl;
+    for (int i = 0; i <  pc_tmp->size(); i++) 
+    {
+        cout << pc_tmp->points[i] << endl;
+    }
+
+    exit(0);
+
     boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> cloud0(new pcl::PointCloud<pcl::PointXYZRGB>);
     LidarPointCloudPtr cloud(new LidarPointCloud);
     LidarPointCloudPtr transformed_cloud(new LidarPointCloud);

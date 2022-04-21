@@ -38,6 +38,14 @@ void Estimator::setParameter()
   LidarFactor::sqrt_info = 1e-3;
 }
 
+void Estimator::setParameter(double laser, double p2la, double enc, double lid)
+{
+  Laser2DFactor::sqrt_info = laser; // was 2e6
+  P2LAnalyticICPFactor::sqrt_info = p2la; // was 0.5
+  EncoderFactor::sqrt_info = enc;
+  LidarFactor::sqrt_info = lid;
+}
+
 void Estimator::clearState()
 {
   for (int i = 0; i < WINDOW_SIZE + 1; i++)
@@ -1017,6 +1025,9 @@ bool Estimator::failureDetection()
 void Estimator::optimization()
 {
   ceres::Problem problem;
+  ceres::ResidualBlockId r_id;
+  unordered_map<int, vector<ceres::ResidualBlockId>> residual_map;
+  cost_map.clear();
   ceres::LossFunction *loss_function;
   //loss_function = new ceres::HuberLoss(1.0);
   loss_function = new ceres::CauchyLoss(1.0);
@@ -1077,8 +1088,9 @@ void Estimator::optimization()
     // construct new marginlization_factor
     MarginalizationFactor *marginalization_factor = new MarginalizationFactor(
         last_marginalization_info);
-    problem.AddResidualBlock(marginalization_factor, NULL,
+    r_id = problem.AddResidualBlock(marginalization_factor, NULL,
                              last_marginalization_parameter_blocks);
+    add_residual_id(residual_map, MARGINALIZATION_FACTOR, r_id);
   }
 
 
@@ -1201,8 +1213,9 @@ void Estimator::optimization()
     if (pre_integrations[j]->sum_dt > 10.0)
       continue;
     IMUFactor *imu_factor = new IMUFactor(pre_integrations[j]);
-    problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i],
+    r_id = problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i],
                              para_Pose[j], para_SpeedBias[j]);
+    add_residual_id(residual_map, IMU_FACTOR, r_id);
     imu_factor_cnt++;
   }
   cout << "IMU factor count: " << imu_factor_cnt << endl;
@@ -1246,10 +1259,10 @@ void Estimator::optimization()
                                      it_per_frame.cur_td,
                                      it_per_id.feature_per_frame[0].uv.y(),
                                      it_per_frame.uv.y());
-          problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i],
+          r_id = problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i],
                                    para_Pose[imu_j], para_Ex_Pose[0],
                                    para_Feature[feature_index], para_Td[0]);
-
+          add_residual_id(residual_map, FEATURE_REPROJ_FACTOR, r_id);
           proj_factor_cnt++;
 
           /*
@@ -1265,9 +1278,10 @@ void Estimator::optimization()
         {
           ProjectionFactor *f = new ProjectionFactor(pts_i, pts_j);
 
-          problem.AddResidualBlock(f, loss_function, para_Pose[imu_i],
+          r_id = problem.AddResidualBlock(f, loss_function, para_Pose[imu_i],
                                    para_Pose[imu_j], para_Ex_Pose[0],
                                    para_Feature[feature_index]);
+          add_residual_id(residual_map, FEATURE_REPROJ_FACTOR, r_id);
         }
         f_m_cnt++;
       }
@@ -1302,9 +1316,10 @@ void Estimator::optimization()
                                      it_per_frame.cur_td,
                                      it_per_id.laser_kf.uv.y(),
                                      it_per_frame.uv.y());
-          problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i],
+          r_id = problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i],
                                    para_Pose[imu_j], para_Ex_Pose[0],
                                    para_Feature[feature_index], para_Td[0]);
+          add_residual_id(residual_map, FEATURE_REPROJ_FACTOR, r_id);
           proj_factor_cnt++;
 
         }
@@ -1314,8 +1329,9 @@ void Estimator::optimization()
         f_laser_cnt++;
         Laser2DFactor *laser_2d_factor =
             new Laser2DFactor(it_per_id.laser_depth, 0);
-        problem.AddResidualBlock(laser_2d_factor, NULL, //laser_loss_function,
+        r_id = problem.AddResidualBlock(laser_2d_factor, NULL, //laser_loss_function,
                                  para_Feature[feature_index]);
+        add_residual_id(residual_map, LASER_2D_FACTOR, r_id);
         cout << "FoL feature index in para_Feature block: " << feature_index << endl;
       }
 
@@ -1536,8 +1552,9 @@ void Estimator::optimization()
       ROS_DEBUG("encoder factor frame %d:\n\tt1: %.3f, t2: %.3f\n\tencoder: %f",
                 i, Headers[i].stamp.toSec(), Headers[i + 1].stamp.toSec(),
                 relative_dist);
-      problem.AddResidualBlock(encoder_factor, NULL,
+      r_id = problem.AddResidualBlock(encoder_factor, NULL,
                                para_Pose[i], para_Pose[i + 1]);
+      add_residual_id(residual_map, ENCODER_FACTOR, r_id);
     }
   }
 
@@ -1559,20 +1576,21 @@ void Estimator::optimization()
       double t_cur = Headers[i+1].stamp.toSec();
       std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>> corrs_df1f2_df2f1;
 
-      Eigen::Matrix4d T_prev_2, T_cur_1;
-      int lidar_res = lidar_manager.get_relative_tf(t_prev, t_cur, corrs_df1f2_df2f1, T_prev_2, T_cur_1);
+      Eigen::Matrix4d T_prev_1, T_cur_1;
+      int lidar_res = lidar_manager.get_relative_tf(t_prev, t_cur, corrs_df1f2_df2f1, T_prev_1, T_cur_1);
       ROS_DEBUG("result = %d", lidar_res);
       if (lidar_res < 0)
         continue;
       // create a factor for each point pair
       Eigen::Matrix4d premult1, premult2;
-      premult1 = T_i_lid * T_prev_2;
+      premult1 = T_i_lid * T_prev_1;
       premult2 = T_i_lid * T_cur_1;
       for (int j = 0; j < corrs_df1f2_df2f1.size(); j++) {
         Eigen::Vector3d p_df1_f2 = corrs_df1f2_df2f1[j].first.cast<double>();
         Eigen::Vector3d p_df2_f1 = corrs_df1f2_df2f1[j].second.cast<double>();
         auto lidar_factor = LidarFactor::Create(p_df1_f2, p_df2_f1, T_i_lid, T_i_lid);
-        problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
+        r_id = problem.AddResidualBlock(lidar_factor, NULL, para_Pose[i], para_Pose[i+1]);
+        add_residual_id(residual_map, LIDAR_FACTOR, r_id);
       }
       ROS_DEBUG("Lidar factor frame %d:\n\tt1: %.3f, t2: %.3f\n\t#corrs: %d",
                 i, t_prev, t_cur,
@@ -1612,9 +1630,10 @@ void Estimator::optimization()
           Vector3d pts_i = it_per_id.feature_per_frame[0].point;
 
           ProjectionFactor *f = new ProjectionFactor(pts_i, pts_j);
-          problem.AddResidualBlock(f, loss_function, para_Pose[start],
+          r_id = problem.AddResidualBlock(f, loss_function, para_Pose[start],
                                    relo_Pose, para_Ex_Pose[0],
                                    para_Feature[feature_index]);
+          add_residual_id(residual_map, RELOC_FACTOR, r_id);
           retrive_feature_index++;
         }
       }
@@ -1650,8 +1669,24 @@ void Estimator::optimization()
   std::vector<double> residuals;
   std::vector<double> gradient;
   ceres::CRSMatrix jacobian_matrix;
-  problem.Evaluate(ceres::Problem::EvaluateOptions(), &cost, &residuals, &gradient, &jacobian_matrix);
-
+  //problem.Evaluate(ceres::Problem::EvaluateOptions(), &cost, &residuals, &gradient, &jacobian_matrix);
+  //cout << "Residuals...................................size: " << residuals.size() << endl;
+  for (int i = 0; i < 8; i++)
+  {
+    ceres::Problem::EvaluateOptions options_eval;
+    if (residual_map.find(i) != residual_map.end())
+    {
+      options_eval.residual_blocks = residual_map[i];
+      double total_cost = 0.0;
+      vector<double> evaluated_residuals;
+      problem.Evaluate(options_eval, &total_cost, &evaluated_residuals, nullptr, nullptr);
+      cost_map[i] = total_cost;
+    }
+    else
+      cost_map[i] = 0.0;
+  }
+  
+  
   double2vector();
 
 
@@ -2826,4 +2861,14 @@ bool Estimator::showPointOnImage(double im_stamp, double u, double v,
   auto cmd = cv::waitKey(10000);
   return cmd != 'q';
 }
+
+void Estimator::add_residual_id(unordered_map<int, vector<ceres::ResidualBlockId>> &r_map, int type, ceres::ResidualBlockId &block_id)
+{
+  if (r_map.find(type) == r_map.end())
+  {
+    r_map[type] = vector<ceres::ResidualBlockId>();
+  }
+  r_map[type].push_back(block_id);
+}
+
 

@@ -118,6 +118,19 @@ enum NoiseOrder
 };
 
 
+enum ResidualType
+{
+  MARGINALIZATION_FACTOR = 0,
+  IMU_FACTOR = 1,
+  FEATURE_REPROJ_FACTOR = 2,
+  LASER_2D_FACTOR = 3,
+  P2L_ICP_FACTOR = 4,
+  ENCODER_FACTOR = 5,
+  LIDAR_FACTOR = 6,
+  RELOC_FACTOR = 7
+};
+
+
 template <typename T>
 double getDouble(T var)
 {

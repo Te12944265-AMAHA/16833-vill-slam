@@ -52,6 +52,8 @@ public:
 
   void setParameter();
 
+  void setParameter(double laser, double p2la, double enc, double lid);
+
   // interface
   void processIMU(double t, const Vector3d &linear_acceleration,
                   const Vector3d &angular_velocity);
@@ -135,6 +137,8 @@ public:
   bool showPointOnImage(double im_stamp, double u, double v,
                         const string& window_name);
 
+  void add_residual_id(unordered_map<int, vector<ceres::ResidualBlockId>> &r_map, int type, ceres::ResidualBlockId &block_id);
+
   enum SolverFlag
   {
     INITIAL,
@@ -153,6 +157,8 @@ public:
     MAP_RUN = 1
   };
 
+  unordered_map<int, double> cost_map;
+  
   SolverFlag solver_flag;
   MarginalizationFlag marginalization_flag;
   Vector3d g;

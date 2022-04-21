@@ -52,9 +52,9 @@ typedef struct lidar_data_frame
     double feature_time;
     bool use_interpolate;
     LidarFramePtr f1_p;
-    LidarFramePtr f2_p;
-    Eigen::Matrix4f T_1_cur;
-    Eigen::Matrix4f T_cur_2;
+    //LidarFramePtr f2_p;
+    Eigen::Matrix4f T_cur_1;
+    //Eigen::Matrix4f T_cur_2;
 } LidarDataFrame;
 
 typedef std::shared_ptr<LidarDataFrame> LidarDataFramePtr;
