@@ -2,7 +2,19 @@ cmake_minimum_required(VERSION 2.8.3)
 project(camera_model)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++14")
+
+execute_process(COMMAND lsb_release -cs
+    OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
+)
+
+if(${LSB_RELEASE_ID_SHORT} MATCHES "bionic")
+  set(CMAKE_CXX_FLAGS "-std=c++11")
+  message("-- Systemm version: ${LSB_RELEASE_ID_SHORT}, set to C++11")
+elseif(${LSB_RELEASE_ID_SHORT} MATCHES "focal")
+  set(CMAKE_CXX_FLAGS "-std=c++14")
+  message("-- Systemm version: ${LSB_RELEASE_ID_SHORT}, set to C++14")
+endif()
+set (CMAKE_EXE_LINKER_FLAGS "-lboost_filesystem")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fPIC")
 
 find_package(catkin REQUIRED COMPONENTS
@@ -10,7 +22,11 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     )
 
+if(${LSB_RELEASE_ID_SHORT} MATCHES "bionic")
+  find_package(Boost 1.65.1 EXACT REQUIRED COMPONENTS filesystem program_options system)
+elseif(${LSB_RELEASE_ID_SHORT} MATCHES "focal")
 find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
+endif()
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(OpenCV REQUIRED)

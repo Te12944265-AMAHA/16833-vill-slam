@@ -1,8 +1,8 @@
 #include <boost/algorithm/string.hpp>
 //#include <boost/filesystem.hpp>
-//#define BOOST_NO_CXX11_SCOPED_ENUMS
+//#define BOOST_NO_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
-//#undef BOOST_NO_CXX11_SCOPED_ENUMS
+//#undef BOOST_NO_SCOPED_ENUMS
 #include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
