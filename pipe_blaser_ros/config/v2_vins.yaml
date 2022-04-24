@@ -129,7 +129,7 @@ visualize_camera_size: 0.01      # size of camera marker in RVIZ
 visualize_camera_line_width: 0.002
 
 use_encoder: 0
-use_lidar: 0
+use_lidar: 1
 
 # image parameters
 width: 1232
@@ -152,6 +152,6 @@ segment_length_thresh: 20
 
 v_thresh_ratio: 0.05
 #mask_file: "/home/pipe/catkin_ws/pipe_blaser_ws/src/pipe_blaser_ros/config/v2_mask.png"
-mask_file: "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_0204.png"
-#mask_file: "/home/tina/Documents/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_0204.png"
+#mask_file: "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_0204.png"
+mask_file: "/home/tina/Documents/blaser_ws/src/blaser_mapping/pipe_blaser_ros/config/mask_v2_0204.png"
 

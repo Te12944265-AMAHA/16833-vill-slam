@@ -49,6 +49,8 @@ bool init_feature = 0;
 bool init_imu = 1;
 double last_imu_t = 0;
 
+double last_lidar_time = 0.0;
+
 struct DataFrame
 {
   sensor_msgs::PointCloudConstPtr feature;
@@ -241,17 +243,18 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
     {
       LidarDataFramePtr lidar_data_frame_ptr (new LidarDataFrame);
       // interpolate lidar pose at feature_time
-      while (lidar_buf.size() > 2
-          && lidar_buf[1]->header.stamp.toSec() < feature_time)
+      ROS_INFO_STREAM("lidar buf size (before): " << lidar_buf.size());
+      while (lidar_buf.size() > 2 && lidar_buf[1]->header.stamp.toSec() < feature_time)
         lidar_buf.pop_front();
-      ROS_DEBUG("lidar buf size: %d", lidar_buf.size());
+      ROS_INFO_STREAM("lidar buf size (after): " << lidar_buf.size());
       if (lidar_buf.size() == 0)
       {
+        ROS_INFO("entering if");
         lidar_data_frame_ptr = nullptr;
       }
       else if (lidar_buf.size() == 1) // the last bufferred reading's time equals feature time
       {
-        ROS_DEBUG("entering else if");
+        ROS_INFO("entering else if");
         LidarPointCloudPtr lidar_cloud1(new LidarPointCloud);
         cloud_msg_to_pcl(lidar_buf[0], lidar_cloud1);
         // subsample by 10
@@ -270,7 +273,9 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
       }
       else // two left, then we interp
       {
-        ROS_DEBUG("entering else");
+        ROS_INFO_STREAM("time stamps of lidar frames in buffer: " << std::fixed 
+            << std::setprecision(3) << lidar_buf[0]->header.stamp.toSec() << ", " << lidar_buf[1]->header.stamp.toSec());
+        ROS_INFO("entering else");
         lidar_data_frame_ptr->use_interpolate = true;
         lidar_data_frame_ptr->feature_time = feature_time;
         // convert sensor_msgs/PointCloud2 into pcl/PointCloud
@@ -288,6 +293,7 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         // f1 = T_1_2 * f2
         Eigen::Affine3f tf_1_2_f;
         Eigen::Affine3d tf_1_2;
+        /*
         estimator.lidar_manager.align_pcl_icp(lidar_cloud2, lidar_cloud1, corrs, tf_1_2_f);
         //ROS_DEBUG("aligned point clouds");
         tf_1_2 = tf_1_2_f.cast<double>();
@@ -303,7 +309,9 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         interpTrans(q_i, t_i,q_1_2, tf_1_2.translation(), ratio, q_1_cur, t_1_cur);
         Eigen::Matrix4d T_1_cur_d;
         pose2T(t_1_cur, q_1_cur, T_1_cur_d);
-        lidar_data_frame_ptr->T_cur_1 = invT(T_1_cur_d).cast<float>(); 
+        */
+        Matrix4f transform = Matrix4f::Identity(4, 4);
+        lidar_data_frame_ptr->T_cur_1 = transform;  // invT(T_1_cur_d).cast<float>(); 
         // get T_cur_2
         //Eigen::Matrix4d T_cur_2_d = invT(T_1_cur_d) * tf_1_2.matrix();
         //lidar_data_frame_ptr->T_cur_2 = T_cur_2_d.cast<float>();
@@ -312,7 +320,7 @@ void getMeasurements(std::vector<DataFrame>& data_frames)
         //lidar_data_frame_ptr->f2_p = f2;
       }
       frame.lidar = lidar_data_frame_ptr;
-      ROS_DEBUG("done adding lidar to data frame");
+      ROS_INFO_STREAM("done adding lidar to data frame");
     }
 
     data_frames.push_back(frame);
@@ -583,9 +591,15 @@ void lidar_callback(const sensor_msgs::PointCloud2ConstPtr &lidar_msg)
 {
   if (USE_LIDAR)
   {
-    m_buf.lock();
-    lidar_buf.push_back(lidar_msg);
-    m_buf.unlock();
+    // check frequency
+    double this_lidar_time = lidar_msg->header.stamp.toSec();
+    if (this_lidar_time - last_lidar_time > 1.0)
+    {
+      m_buf.lock();
+      lidar_buf.push_back(lidar_msg);
+      m_buf.unlock();
+      last_lidar_time = this_lidar_time;
+    }
   }
 }
 

@@ -74,8 +74,8 @@ private:
     double radius = 0;
 
 
-    int point_filter_num = 100;
-    const double min_dist = 0.5;
+    int point_filter_num = 10;
+    const double min_dist = 0.95;
     const double max_dist = 6;
 };
 

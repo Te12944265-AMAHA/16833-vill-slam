@@ -35,7 +35,7 @@ void Estimator::setParameter()
   td = TD;
   EncoderFactor::sqrt_info = 1e1;
   // TODO Lidar parameters
-  LidarFactor::sqrt_info = 1e-3;
+  LidarFactor::sqrt_info = 100;
 }
 
 void Estimator::setParameter(double laser, double p2la, double enc, double lid)

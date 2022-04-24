@@ -21,37 +21,23 @@
 #include "../lidar/lidar_frame.h"
 #include "../lidar/lidar_manager.h"
 
+#include "../utility/tic_toc.h"
+
 using namespace std;
 using namespace Eigen;
 
 int main(int argc, char **argv)
 {
 
-    // test pcl reserve
-    LidarPointCloudPtr pc_tmp (new LidarPointCloud);
-    pc_tmp->reserve(4);
-    for (int i = 0; i < 3; i++)
-    {
-        LidarPoint pt_tmp;
-        pt_tmp.x = 1.1;
-        pt_tmp.y = 2.2;
-        pt_tmp.z = 3.3;
-        pc_tmp->push_back(pt_tmp);
-    }
-    cout << "size: " << pc_tmp->size() << endl;
-    for (int i = 0; i <  pc_tmp->size(); i++) 
-    {
-        cout << pc_tmp->points[i] << endl;
-    }
-
-    exit(0);
+    
 
     boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB>> cloud0(new pcl::PointCloud<pcl::PointXYZRGB>);
     LidarPointCloudPtr cloud(new LidarPointCloud);
     LidarPointCloudPtr transformed_cloud(new LidarPointCloud);
-    string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample.pcd";
-    string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample_tf.pcd";
-
+    //string filename_1 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample.pcd";
+    //string filename_2 = "/home/tina-laptop/localFiles/research/blaser/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample_tf.pcd";
+    string filename_1 = "/home/tina/Documents/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample.pcd";
+    string filename_2 = "/home/tina/Documents/blaser_ws/src/blaser_mapping/test_data/pipe_short_sample_tf.pcd";
 /*
     double pose[7] = {1,2,3,4,5,6,7}; // the transformation T such that dst = T * src
     Eigen::Map<Eigen::Matrix<double, 3, 1>> t(pose);
@@ -111,7 +97,48 @@ int main(int argc, char **argv)
 
     lidar_manager.align_pcl_icp(frame2->pc_l_, frame1->pc_l_, corrs, tf);
 
+    // can we use these corres to optimize the residual using ceres?
+    double pose[SIZE_POSE] = {0, 0, 0, 0, 0, 0, 1}; // the transformation T such that dst = T * src
+    double pose0[SIZE_POSE] = {0, 0, 0, 0, 0, 0, 1};
+    ceres::Problem problem;
+    ceres::LossFunction *loss_function;
+    //loss_function = new ceres::HuberLoss(1.0);
+    loss_function = new ceres::CauchyLoss(1.0);
+    ceres::LossFunction *laser_loss_function = new ceres::CauchyLoss(10.0);
+    ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+    // ceres::LocalParameterization* q_local_parameterization =  ceres::QuaternionParameterization();
 
+    // we're only optimizing the relative T
+    problem.AddParameterBlock(pose, SIZE_POSE, local_parameterization);
+    problem.AddParameterBlock(pose0, SIZE_POSE, local_parameterization);
+    problem.SetParameterBlockConstant(pose0); // pose 0 is the pose of cloud, pose is the pose of the transformed cloud
+    Eigen::Matrix4d Ttmp = Eigen::Matrix4d::Identity(4,4);
+
+    for (int j = 0; j < corrs.size(); j++) {
+        Eigen::Vector3d p_target = corrs[j].first.cast<double>(); // point in cloud 
+        Eigen::Vector3d p_source = corrs[j].second.cast<double>(); // point in transformed cloud
+        auto lidar_factor = LidarFactor::Create(p_target, p_source, Ttmp, Ttmp);
+        problem.AddResidualBlock(lidar_factor, NULL, pose, pose0);
+    }
+    TicToc t_solver;
+    ceres::Solver::Summary summary;
+    ceres::Solver::Options options;
+    ceres::Solve(options, &problem, &summary);
+    cout << summary.BriefReport() << endl;
+    cout << "Iterations : " << static_cast<int>(summary.iterations.size()) << endl;
+    cout << "solver costs: " << t_solver.toc() << endl;
+
+    // print solved tf
+    Eigen::Map<Eigen::Matrix<double, 3, 1>> t(pose);
+    Eigen::Map<Eigen::Quaternion<double>> q(pose + 3);
+    Eigen::Map<Eigen::Matrix<double, 3, 1>> t0(pose0);
+    Eigen::Map<Eigen::Quaternion<double>> q0(pose0 + 3);
+
+    Eigen::Matrix4d T_ceres, T0_ceres;
+    pose2T(t, q, T_ceres);
+    pose2T(t0, q0, T0_ceres);
+    cout << "T_ceres: " << T_ceres << endl;
+    cout << "T0_ceres: " << T0_ceres << endl;
     
     // transform back
     LidarPointCloudPtr cloud2(new LidarPointCloud);
@@ -121,7 +148,6 @@ int main(int argc, char **argv)
 
     cout <<" gt: " << endl;
     Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
-    // Define a translation of 2.5 meters on the x axis.
     transform_2.translation() << 0.2, 0.1, 0.0;
     // rotate around x axis
     float theta = M_PI / 6;
